@@ -18,6 +18,12 @@ function Dashboard() {
     // This is where you would fetch data from the API
   };
 
+  // Function to handle adding friends, for now we'll just log to the console
+  const addFriends = () => {
+    console.log("Navigating to add friends...");
+    navigate('/freinds'); // Navigate to the dashboard
+  };
+
   return (
     <div>
       <h2>Energy Measurements</h2>
@@ -29,6 +35,8 @@ function Dashboard() {
       </ul>
       <button onClick={fetchData}>Fetch Data</button>
       <button onClick={() => navigate("/")}>Sign Out</button>
+      {/* Add a new button for adding friends */}
+      <button onClick={addFriends}>Add Friends</button>
     </div>
   );
 }

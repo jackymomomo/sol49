@@ -19,6 +19,7 @@ body {
 h1 {
 	font-weight: bold;
 	margin: 0;
+    color: black;
 }
 
 h2 {
@@ -31,6 +32,7 @@ p {
 	line-height: 20px;
 	letter-spacing: 0.5px;
 	margin: 20px 0 30px;
+    color: black;
 }
 
 span {
@@ -46,9 +48,9 @@ a {
 
 button {
 	border-radius: 20px;
-	border: 1px solid #FF4B2B;
-	background-color: #FF4B2B;
-	color: #FFFFFF;
+	border: 1px solid #c8e40f;
+	background-color: #e5db17;
+	color: #000000;
 	font-size: 12px;
 	font-weight: bold;
 	padding: 12px 45px;
@@ -67,7 +69,7 @@ button:focus {
 
 button.ghost {
 	background-color: transparent;
-	border-color: #FFFFFF;
+	border-color: #000000;
 }
 
 form {
@@ -161,8 +163,8 @@ input {
 
 .overlay {
 	background: #14f9d3;
-	background: -webkit-linear-gradient(to right, #ddf509, #bcb002);
-	background: linear-gradient(to right, #f2fb43, #f2f20d);
+	/* background: -webkit-linear-gradient(to right, #2402ff, #17d206); */
+	background: linear-gradient(to right, #cbcb15, #fff203);
 	background-repeat: no-repeat;
 	background-size: cover;
 	background-position: 0 0;
@@ -211,7 +213,7 @@ input {
 	transform: translateX(20%);
 }
 
-.social-container {
+/* .social-container {
 	margin: 20px 0;
 }
 
@@ -224,7 +226,7 @@ input {
 	margin: 0 5px;
 	height: 40px;
 	width: 40px;
-}
+} */
 
 footer {
     background-color: #222;
@@ -251,80 +253,111 @@ footer a {
     text-decoration: none;
 }
 
-@media only screen and (max-width: 600px) {
-    .container, .form-container, .overlay-container {
-        width: 100%;
-    }
-    /* Adjust sizes and padding for smaller screens but maintain the essential properties for transitions */
-    .overlay-container, .form-container {
-        transition: transform 0.6s ease-in-out; /* Ensure transitions remain smooth */
-    }
+footer a:hover {
+    text-decoration: underline;
 }
 
+.social {
+    float: right;
+    max-width: 320px;
+    display: flex;
+    padding: 0.5rem 1.4rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    font-weight: 700;
+    text-align: center;
+    font-family: "Montserrat", sans-serif;
+    vertical-align: middle;
+    align-items: center;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    gap: 0.75rem;
+    color: #c4d2dc;
+    background-color: #19242b;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0, 0.87, 0.12, 1);
+  }
+  
+  .social:hover {
+    transform: scale(1.025);
+  }
+  
+  .social:active {
+    transform: scale(0.975);
+  }
+  
+  button svg {
+    height: 24px;
+    width: auto;
+  }
+  
+/* Existing CSS above */
 
-
-/* Medium devices (tablets, 768px and up) */
-@media only screen and (min-width: 601px) and (max-width: 768px) {
-   
-
-    form {
-        padding: 0 30px;
-    }
-
+/* iPhone-specific adjustments */
+@media only screen and (max-width: 375px) { /* iPhone X, XS, 11 Pro, etc., in portrait */
     h1, h2 {
-        font-size: 20px;
+        font-size: 18px; /* Smaller font sizes for headings */
     }
-
-    p, a, button, input {
-        font-size: 14px;
+     a, input, button {
+        font-size: 12px; /* Adjust font size for readability */
     }
-
     button {
-        padding: 10px 35px;
+        padding: 5px 50px; /* Larger touch area for buttons */
+    }
+    input {
+       width: 150%;
+    }
+    .container, .overlay-container {
+        width: 400px; /* Full width containers for smaller screens */
+        padding: 0 20px; /* Padding adjustment for screen edge */
+    }
+   .overlay-panel {
+    width: 78%;
+    }
+    p{
+        font-size: 10px;
     }
 }
 
-/* Adjustments for around 900 pixels */
-@media only screen and (max-width: 900px) {
+@media only screen and (max-width: 414px) { /* Larger iPhones in portrait (iPhone 6+, 7+, 8+, X, XR, XS Max, 11, 11 Pro Max) */
+    /* Adjustments similar to 375px media query but tailored for slightly larger screens */
     h1, h2 {
-        font-size: 1.5rem; /* Adjust based on your design needs */
+        font-size: 18px; /* Smaller font sizes for headings */
     }
-
-    p, a {
-        font-size: 0.9rem;
+    p, a, input, button {
+        font-size: 12px; /* Adjust font size for readability */
     }
-
-    /* Adjust form elements for better usability */
-    input, button {
-        padding: 10px; /* Adjust padding for better touch interaction */
-        font-size: 0.8rem; /* Ensure text is legible */
+    button {
+        padding: 5px 50px; /* Larger touch area for buttons */
     }
-
-    /* Adjust container padding and margins for better spacing */
-    .form-container {
-        padding: 20px; /* Provide enough space for elements */
+    input {
+       width: 150%;
     }
-    .form-container, .overlay-container {
-        position: static; /* Temporarily disable absolute positioning */
-        opacity: 1; /* Ensure visibility */
-        transform: none; /* Reset any transformations */
+    .container, .overlay-container {
+        width: 400px; /* Full width containers for smaller screens */
+        padding: 0 20px; /* Padding adjustment for screen edge */
     }
-
-    .sign-in-container, .sign-up-container {
-        position: relative; /* Reset positioning if needed */
-        width: 100%; /* Full width to prevent disappearance */
-        opacity: 1; /* Ensure visibility */
-        transform: none; /* Reset transformations */
-        z-index: auto; /* Adjust z-index to ensure visibility */
+   .overlay-panel {
+    width: 78%;
     }
-
-    /* Ensure the overlay is correctly positioned and visible */
-    .overlay {
-        position: relative; /* Adjust if overlay positioning is causing issues */
-        width: 100%; /* Full width for the overlay */
-        transform: translateX(0%); /* Reset transformations */
-    }
-
-    /* Additional adjustments for other elements if necessary */
 }
 
+@media only screen and (max-width: 812px) and (orientation: landscape) { /* iPhones with larger screens in landscape */
+    body {
+        flex-direction: row; /* Adjust main axis for landscape orientation */
+        justify-content: space-around; /* Space out elements more */
+    }
+    .container {
+        max-width: 90%; /* Limit max-width for better spacing */
+        margin: 20px; /* Add margin around container for better spacing */
+    }
+    /* Adjust font sizes and paddings for landscape orientation */
+    h1, h2, p, a, button, input {
+        font-size: 12px; /* Decrease font size for landscape */
+    }
+    button, input {
+        padding: 12px 30px; /* Adjust padding for comfort in landscape */
+    }
+}
+
+/* Further adjustments may be needed based on specific iPhone models or personal design preferences. */

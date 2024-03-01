@@ -9,7 +9,8 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<AuthForm />} />
-        <Route path="/dashboard" element={<DeviceStatusComponent />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/device-status" element={<DeviceStatusComponent />} />
       </Routes>
     </Router>
   );
