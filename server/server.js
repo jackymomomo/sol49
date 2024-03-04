@@ -1,40 +1,58 @@
 const express = require('express');
+const { TuyaContext } = require('@tuya/tuya-connector-nodejs');
 const axios = require('axios');
+const cors = require('cors');
+
 const app = express();
-const port = 3001; // Ensure this port is different from your React app's port
+const port = 3001;
 
+
+// Initialize TuyaContext with your Tuya credentials
+const tuya = new TuyaContext({
+  baseUrl: 'https://openapi.tuyaus.com',
+  accessKey: '3xmddyfr5smt4fjfvema', // Replace with your Access Key
+  secretKey: '1f798ac5ce304b88b575df687dfa5f67', // Replace with your Secret Key
+  rpc: axios,
+});
+
+app.use(cors()); // Enable CORS for all origins (Adjust in production)
 app.use(express.json());
-
-app.all('/api/*', async (req, res) => {
-  const url = `https://openapi.tuyaus.com${req.originalUrl.slice(4)}`;
-  const clientId = '3xmddyfr5smt4fjfvema'; // Replace with your actual client ID
-  const accessToken = '7ba9fc680d83b392c74b15e066d8e8af'; // Replace with your actual access token
-  const sign = generateSignature(); // You need to implement this based on Tuya's requirements
-  const timestamp = new Date().getTime(); // Current timestamp
-  const nonce = generateNonce(); // You need to implement this; it's typically a UUID
-
+// Endpoint to get device status
+app.get('/device-status/:deviceId', async (req, res) => {
+  const { deviceId } = req.params;
   try {
-    const response = await axios({
-      method: req.method,
-      url,
-      headers: {
-        'client_id': clientId,
-        'sign': sign,
-        'sign_method': 'HMAC-SHA256',
-        't': timestamp,
-        'access_token': accessToken,
-        'nonce': nonce,
-        // Include other headers as needed
-      },
-      data: req.body,
+    const response = await tuya.request({
+      method: 'GET',
+      path: `/v1.0/devices/${deviceId}/status`,
     });
-
-    res.json(response.data);
+    res.json(response);
   } catch (error) {
-    res.status(500).json({ message: 'Error forwarding request', details: error.message });
+    console.error('Error fetching device status:', error);
+    res.status(500).send('Failed to fetch device status');
   }
 });
 
-app.listen(port, () => {
-  console.log(`Proxy server listening at http://localhost:${port}`);
+// Endpoint to toggle device switch
+app.post('/device-action/:deviceId', async (req, res) => {
+  const { deviceId } = req.params;
+  const { newState } = req.body; // Ensure the request body contains 'newState' key with boolean value
+
+  try {
+    const response = await tuya.request({
+      method: 'POST',
+      path: `/v1.0/devices/${deviceId}/commands`,
+      body: {
+        commands: [{code: "switch", value: newState}]
+      },
+    });
+    res.json({success: true, data: response});
+  } catch (error) {
+    console.error('Error toggling device switch:', error);
+    res.status(500).send('Failed to toggle device switch');
+  }
 });
+
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Server listening on port ${port}`);
+});
+

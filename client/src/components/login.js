@@ -2,25 +2,35 @@ import React, { useState } from 'react';
 import { auth, googleProvider } from '../firebase-config';
 import { createUserWithEmailAndPassword, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase-config'; // Adjust the import path as needed
+import { doc, setDoc } from 'firebase/firestore';
 import '../styles/AuthForm.css';
 
 function AuthForm() {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [name, setName] = useState(''); // Add this line to store the user's name
+
     const navigate = useNavigate();
 
     const handleSignUp = async (e) => {
         e.preventDefault();
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             console.log('Account created successfully');
-            // Handle successful account creation (e.g., redirect or show a success message)
+            // Now also store the user's name along with their email
+            await setDoc(doc(db, 'users', userCredential.user.uid), {
+                name: name, // Include the name here
+                email: email,
+            });
+            console.log('User profile created in Firestore');
+            navigate('/dashboard'); // Navigate to the dashboard after account creation and profile setup
         } catch (error) {
             console.error('Error creating account:', error.message);
-            // Handle account creation errors
         }
     };
+    
 
     const handleSignIn = async (e) => {
         e.preventDefault();
@@ -75,7 +85,7 @@ function AuthForm() {
                             {/* Sign in with Google */}
                         </button>                    </div>
                     <span>or use your email for registration</span>
-                    <input type="text" placeholder="Name" /> {/* This input can be used for additional user info */}
+                    <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} /> {/* Update this line to bind name */}
                     <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
                     <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     <button>Sign Up</button>
