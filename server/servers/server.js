@@ -3,6 +3,7 @@ const { TuyaContext } = require('@tuya/tuya-connector-nodejs');
 const axios = require('axios');
 const cors = require('cors');
 
+
 const app = express();
 const port = 3001;
 
@@ -17,7 +18,7 @@ const tuya = new TuyaContext({
 
 app.use(cors()); // Enable CORS for all origins (Adjust in production)
 app.use(express.json());
-// Endpoint to get device status
+// Endpoint to get device statusi
 app.get('/device-status/:deviceId', async (req, res) => {
   const { deviceId } = req.params;
   try {
@@ -31,6 +32,7 @@ app.get('/device-status/:deviceId', async (req, res) => {
     res.status(500).send('Failed to fetch device status');
   }
 });
+
 
 // Endpoint to toggle device switch
 app.post('/device-action/:deviceId', async (req, res) => {

@@ -10,9 +10,16 @@ function Dashboard() {
   const [kW, setKW] = useState('0 kW');
   const [volts, setVolts] = useState('0 V');
   const [totalForwardEnergy, setTotalForwardEnergy] = useState('0 kWh');
+  const [batteryPercentage, setBatteryPercentage] = useState('0%');
 
   useEffect(() => {
-    fetchDeviceStatus();
+    const interval = setInterval(() => {
+      fetchDeviceStatus();
+    }, 500);
+
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   function decodePhaseAData(encodedData) {
@@ -32,48 +39,50 @@ function Dashboard() {
   }
 
   const fetchDeviceStatus = async () => {
-  setIsLoading(true);
-  try {
-    const response = await axios.get(
-      `http://192.168.1.110:3001/device-status/ebb5e3def0bf7ca3f211bv`
-    );
-    const results = response.data.result;
+    setIsLoading(true);
+    try {
+      const response = await axios.get(
+        `http://192.168.1.110:3001/device-status/ebb5e3def0bf7ca3f211bv`
+      );
+      const results = response.data.result;
 
-    const totalForwardEnergyObj = results.find(
-      (d) => d.code === 'total_forward_energy'
-    );
-    if (totalForwardEnergyObj) {
-      const energy = totalForwardEnergyObj.value;
-      const formattedEnergy = `${(energy / 100).toFixed(2)} kWh`;
-      setTotalForwardEnergy(formattedEnergy);
+      const totalForwardEnergyObj = results.find(
+        (d) => d.code === 'total_forward_energy'
+      );
+      if (totalForwardEnergyObj) {
+        const energy = totalForwardEnergyObj.value;
+        const formattedEnergy = (energy / 100).toFixed(2); // Keep it as numeric for calculation
+        const batteryCapacityPercentage = ((parseFloat(formattedEnergy) / 14.3) * 100).toFixed(2);
+        setTotalForwardEnergy(`${formattedEnergy} kWh`); // Update totalForwardEnergy as usual
+        setBatteryPercentage(`${batteryCapacityPercentage}%`); // Update battery percentage
+      }
+     
+      const phaseAObj = results.find((d) => d.code === 'phase_a');
+      if (phaseAObj) {
+        const phaseAData = decodePhaseAData(phaseAObj.value);
+        setAmps(`${phaseAData.current} A`);
+        setKW(`${phaseAData.power} kW`);
+        setVolts(`${phaseAData.voltage} V`);
+      }
+
+      const switchObj = results.find((d) => d.code === 'switch');
+      if (switchObj) {
+        const switchState = switchObj.value;
+        setDeviceStatus({ ...deviceStatus, switch: switchState });
+      }
+
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch device status:', error);
+      setIsLoading(false);
     }
-
-    const phaseAObj = results.find((d) => d.code === 'phase_a');
-    if (phaseAObj) {
-      const phaseAData = decodePhaseAData(phaseAObj.value);
-      setAmps(`${phaseAData.current} A`);
-      setKW(`${phaseAData.power} kW`);
-      setVolts(`${phaseAData.voltage} V`);
-    }
-
-    const switchObj = results.find((d) => d.code === 'switch');
-    if (switchObj) {
-      const switchState = switchObj.value;
-      setDeviceStatus({ ...deviceStatus, switch: switchState });
-    }
-
-    setIsLoading(false);
-  } catch (error) {
-    console.error('Failed to fetch device status:', error);
-    setIsLoading(false);
-  }
-};
+  };
 
   const toggleDeviceSwitch = async () => {
     setIsLoading(true);
     try {
       const currentSwitchState = deviceStatus?.switch;
-      await axios.post(`http://192.168.1.110:3001/device-action/${'ebb5e3def0bf7ca3f211bv'}`, {
+      await axios.post(`http://192.168.1.110:3001/device-action/${'eb4c7af2945b77cce4xdb9'}`, {
         newState: !currentSwitchState,
       });
       setDeviceStatus({ ...deviceStatus, switch: !currentSwitchState });
@@ -89,7 +98,7 @@ function Dashboard() {
       <h2>Energy Measurements</h2>
       <ul>
         <li>Amps: {amps}</li>
-        <li>kWh: {totalForwardEnergy}</li>
+        <li>kWh: {totalForwardEnergy} - Battery Usage: {batteryPercentage}</li>
         <li>kW: {kW}</li>
         <li>Volts: {volts}</li>
       </ul>
