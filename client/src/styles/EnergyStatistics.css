@@ -26,8 +26,8 @@
     position: absolute;
     z-index: 1;
     border-radius: inherit;
-    width: 6.25%;
-    height: -6.6%;
+    width: 15.25%;
+    height: 6.6%;
     /* fix em sizing */
     font: inherit;
     opacity: 0;
