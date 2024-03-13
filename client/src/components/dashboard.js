@@ -13,6 +13,16 @@ import React, { useState, useEffect } from 'react';
     const [deviceStatus, setDeviceStatus] = useState({ switch: false });
     const [isLoading, setIsLoading] = useState(false);
 
+    const totalCapacity = 14.3; // Total capacity of the battery in kWh
+    const nominalVoltage = 153.6; // Nominal voltage in V
+    const maxChargeCurrent = 200; // Max charge current in A
+    // Calculate the percentages
+    const kWhPercentage = (parseFloat(totalForwardEnergy) / totalCapacity) * 100;
+    const ampsPercentage = (parseFloat(amps) / maxChargeCurrent) * 100;
+    const voltsPercentage = (parseFloat(volts) / nominalVoltage) * 100;
+    // kW calculation depends on how you are determining kW in your application
+    const kWPercentage = (parseFloat(kW) / (nominalVoltage * maxChargeCurrent / 1000)) * 100;
+    
     useEffect(() => {
       const interval = setInterval(() => {
         fetchDeviceStatus();
@@ -96,13 +106,31 @@ import React, { useState, useEffect } from 'react';
 
     return (
       <div className='card'>
-        <h2>Energy Measurements</h2>
-        <ul>
-          <li>Amps: {amps}</li>
-          <li>kWh: {totalForwardEnergy} - Battery Usage: {batteryPercentage}</li>
-          <li>kW: {kW}</li>
-          <li>Volts: {volts}</li>
-        </ul>
+      <h2>Energy Measurements</h2>
+      <div className="measurements-container">
+      <div className="measurement-box">
+      <span>Amps:</span>
+        <div className="graph-bar"><div className="graph-value" style={{  width: `${ampsPercentage}%`}}></div></div>
+        <span>{amps}</span>
+      </div>
+      <div className="measurement-box">
+        <span>kWh:</span>
+        <div className="graph-bar"><div className="graph-value"  style={{  width: `${kWhPercentage}%` }}></div></div>
+        <span>{totalForwardEnergy}</span>
+        <span>Battery Usage: {batteryPercentage}</span>
+      </div>
+      <div className="measurement-box">
+        <span>kW:</span>
+        <div className="graph-bar"><div className="graph-value" style={{  width: `${kWPercentage}%` }}>
+           {kW}</div></div>
+        <span>{kW}</span>
+      </div>
+      <div className="measurement-box">
+        <span>Volts:</span>
+        <div className="graph-bar"><div className="graph-value" style={{  width: `${voltsPercentage}%` }}></div></div>
+        <span>{volts}</span>
+      </div>
+</div>
         <div className="toggle-wrapper">
           <input className="toggle-checkbox" type="checkbox" checked={deviceStatus?.switch} onClick={toggleDeviceSwitch} />
           <div className="toggle-container">  

@@ -27,7 +27,7 @@
     z-index: 1;
     border-radius: inherit;
     width: 15.25%;
-    height: 6.6%;
+    /* height: 6.6%; */
     /* fix em sizing */
     font: inherit;
     opacity: 0;
@@ -88,6 +88,53 @@
     outline: none;
   }
   
+  
+  /* Graph value representation */
+  .graph-value {
+    background: #c4c4c4; /* Color representing the value */
+    border-radius: 10px 0 0 10px; /* Rounded corners on the left */
+    height: 100%;
+    width: 50%; /* Adjust based on the value it represents */
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: width 0.5s ease-in-out;
+  }
+  
+  .measurement-box {
+    background: #ececec;
+    border-radius: 10px;
+    box-shadow: inset 4px 4px 8px #a7a7a7, 
+                inset -4px -4px 8px #ffffff;
+    padding: 10px;
+    margin-bottom: 10px; /* Spacing between boxes */
+    width: auto; /* Adjust based on your preference */
+}
+
+.graph-bar {
+    background: repeating-linear-gradient(
+      90deg,
+      #fff,
+      #fff 10px,
+      #ccc 10px,
+      #ccc 11px
+    ); /* Creates the graph paper effect */
+    border-radius: 5px;
+    height: 20px; /* Adjust based on your preference */
+    width: 100%; /* Adjust based on your preference */
+    margin: 5px 0; /* Spacing inside the box */
+    position: relative;
+    overflow: hidden; /* Ensures the .graph-value doesn't overflow */
+}
+
+.measurements-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Creates two columns */
+    gap: 20px; /* Space between grid items */
+    margin-bottom: 20px; /* Optional: space below the grid */
+  }
+  
+
   /* Media query for responsive design */
   @media (max-width: 600px) {
     .card {
