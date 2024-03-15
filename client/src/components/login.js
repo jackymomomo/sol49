@@ -3,14 +3,17 @@ import { auth, googleProvider } from '../firebase-config';
 import { createUserWithEmailAndPassword, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase-config'; // Adjust the import path as needed
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import '../styles/AuthForm.css';
 
 function AuthForm() {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [name, setName] = useState(''); // Add this line to store the user's name
+    const [name, setName] = useState('');
+    const [address, setAddress] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
+    const [deviceID, setDeviceID] = useState(''); // State hook for device_id
 
     const navigate = useNavigate();
 
@@ -19,10 +22,13 @@ function AuthForm() {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             console.log('Account created successfully');
-            // Now also store the user's name along with their email
+            // Now include device_id in the Firestore document
             await setDoc(doc(db, 'users', userCredential.user.uid), {
-                name: name, // Include the name here
-                email: email,
+                name,
+                email,
+                address,
+                phoneNumber,
+                deviceID, // Include device_id here
             });
             console.log('User profile created in Firestore');
             navigate('/dashboard'); // Navigate to the dashboard after account creation and profile setup
@@ -30,7 +36,7 @@ function AuthForm() {
             console.error('Error creating account:', error.message);
         }
     };
-    
+
 
     const handleSignIn = async (e) => {
         e.preventDefault();
@@ -45,17 +51,41 @@ function AuthForm() {
         }
     };
 
-    // Example for the Google sign-in method
     const handleGoogleSignIn = async () => {
         try {
-            await signInWithPopup(auth, googleProvider);
+            const result = await signInWithPopup(auth, googleProvider);
             console.log('Signed in with Google successfully');
-            navigate('/dashboard'); // Navigate to the dashboard
+    
+            // Define the user's document reference in Firestore
+            const userDocRef = doc(db, 'users', result.user.uid);
+    
+            // Attempt to fetch the user's document
+            const userDoc = await getDoc(userDocRef);
+    
+            if (!userDoc.exists()) {
+                await setDoc(userDocRef, {
+                    email: result.user.email,
+                    name: result.user.displayName, // Assuming you want to use the display name from Google
+                    // Initialize other fields as needed, e.g., with null or default values
+                    address: null,
+                    phoneNumber: null,
+                    deviceID: null,
+                });
+                // Since this is a new user, redirect to the additional information page
+                navigate('/additional-info', { state: { userId: result.user.uid } });
+            } else if (!userDoc.data().address || !userDoc.data().phoneNumber || !userDoc.data().deviceID) {
+                // If the document exists but lacks certain information, redirect to the additional information page
+                navigate('/additional-info', { state: { userId: result.user.uid } });
+            } else {
+                // If the document exists and all required information is present, navigate to the dashboard directly
+                navigate('/dashboard');
+            }
         } catch (error) {
             console.error('Error signing in with Google:', error.message);
         }
     };
-
+    
+    
 
     return (
         <div className={`container ${isRightPanelActive ? "right-panel-active" : ""}`} id="container">
@@ -85,7 +115,10 @@ function AuthForm() {
                             {/* Sign in with Google */}
                         </button>                    </div>
                     <span>or use your email for registration</span>
-                    <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} /> {/* Update this line to bind name */}
+                    <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+                    <input type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+                    <input type="text" placeholder="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                    <input type="text" placeholder="Device ID" value={deviceID} onChange={(e) => setDeviceID(e.target.value)} /> {/* Input for device_id */}
                     <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
                     <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     <button>Sign Up</button>

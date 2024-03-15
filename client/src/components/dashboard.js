@@ -1,16 +1,20 @@
 
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import '../styles/EnergyStatistics.css'
-import React, { useState, useEffect } from 'react';
+import { auth, db } from '../firebase-config'; // Make sure you import your Firebase auth and db
+import { doc, getDoc } from 'firebase/firestore';
+import '../styles/EnergyStatistics.css';
+
 
   function Dashboard() {
     const [amps, setAmps] = useState('0 A');
     const [kW, setKW] = useState('0 kW');
     const [volts, setVolts] = useState('0 V');
     const [totalForwardEnergy, setTotalForwardEnergy] = useState('0 kWh');
-    const [batteryPercentage, setBatteryPercentage] = useState('0%');
+    const [batteryPercentage, setBatteryPercentage] = useState('0');
     const [deviceStatus, setDeviceStatus] = useState({ switch: false });
+    const [deviceID, setDeviceID] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     const totalCapacity = 14.3; // Total capacity of the battery in kWh
@@ -23,15 +27,41 @@ import React, { useState, useEffect } from 'react';
     // kW calculation depends on how you are determining kW in your application
     const kWPercentage = (parseFloat(kW) / (nominalVoltage * maxChargeCurrent / 1000)) * 100;
     
-    useEffect(() => {
-      const interval = setInterval(() => {
-        fetchDeviceStatus();
-      }, 1100);
+    const navigate = useNavigate();
 
-      return () => {
-        clearInterval(interval);
+    useEffect(() => {
+      const fetchUserData = async () => {
+        const user = auth.currentUser;
+        if (user) {
+          const userDocRef = doc(db, 'users', user.uid);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            // Set the device ID from the user's document
+            setDeviceID(userDoc.data().deviceID);
+          } else {
+            // Handle case where user document doesn't exist (e.g., redirect or show an error)
+            console.log('No user document found');
+          }
+        } else {
+          // Redirect or handle the case where there is no signed-in user
+          navigate('/login'); // Example redirection
+        }
       };
-    }, []);
+    
+      fetchUserData();
+    }, []); // This effect is only for fetching user data on component mount.
+    
+    useEffect(() => {
+      // Only set up polling if deviceID is available
+      if (deviceID) {
+        const interval = setInterval(() => {
+          fetchDeviceStatus();
+        }, 3100);
+    
+        return () => clearInterval(interval);
+      }
+    }, [deviceID]); // This effect depends on deviceID, it will re-run when deviceID changes.
+    
 
     function decodePhaseAData(encodedData) {
       // Decode base64 to byte array
@@ -52,9 +82,7 @@ import React, { useState, useEffect } from 'react';
     const fetchDeviceStatus = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get(
-          `http://192.168.1.110:3001/device-status/ebb5e3def0bf7ca3f211bv`
-        );
+        const response = await axios.get(`http://192.168.1.110:3001/device-status/${deviceID}`);
         const results = response.data.result;
 
         const totalForwardEnergyObj = results.find(
@@ -63,7 +91,7 @@ import React, { useState, useEffect } from 'react';
         if (totalForwardEnergyObj) {
           const energy = totalForwardEnergyObj.value;
           const formattedEnergy = (energy / 100).toFixed(2); // Keep it as numeric for calculation
-          const batteryCapacityPercentage = ((parseFloat(formattedEnergy) / 14.3) * 100).toFixed(2);
+          const batteryCapacityPercentage = ((parseFloat(formattedEnergy) / .19) * 100).toFixed(2);
           setTotalForwardEnergy(`${formattedEnergy} kWh`); // Update totalForwardEnergy as usual
           setBatteryPercentage(`${batteryCapacityPercentage}%`); // Update battery percentage
         }
@@ -93,7 +121,7 @@ import React, { useState, useEffect } from 'react';
       setIsLoading(true);
       try {
         const currentSwitchState = deviceStatus?.switch;
-        await axios.post(`http://192.168.1.110:3001/device-action/${'ebb5e3def0bf7ca3f211bv'}`, {
+        await axios.post(`http://192.168.1.110:3001/device-action/${deviceID}`, {
           newState: !currentSwitchState,
         });
         setDeviceStatus({ ...deviceStatus, switch: !currentSwitchState });
