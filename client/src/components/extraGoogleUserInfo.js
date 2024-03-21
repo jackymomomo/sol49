@@ -7,6 +7,7 @@ function AdditionalUserInfo() {
     const [address, setAddress] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [deviceID, setDeviceID] = useState('');
+    const [name, setName] = useState('');
     const navigate = useNavigate();
     const location = useLocation();
     const { userId } = location.state; // Assuming you're passing this state from the redirect
@@ -18,6 +19,7 @@ function AdditionalUserInfo() {
                 address,
                 phoneNumber,
                 deviceID,
+                name,
             }, { merge: true }); // Use merge option to update or create the document without overwriting existing fields
 
             console.log('Additional user info saved');
@@ -29,8 +31,9 @@ function AdditionalUserInfo() {
 
     return (
         <form onSubmit={handleSubmit}>
-            <input type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-            <input type="text" placeholder="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+            <input type="Name" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+            <input type="address" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <input type="Phone-Number" placeholder="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
             <input type="text" placeholder="Device ID" value={deviceID} onChange={(e) => setDeviceID(e.target.value)} />
             <button type="submit">Submit</button>
         </form>

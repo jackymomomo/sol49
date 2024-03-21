@@ -1,4 +1,4 @@
-/* Neumorphism style */
+
 .card {
     background: #ececec;
     border-radius: 20px;
@@ -33,6 +33,8 @@
     opacity: 0;
     cursor: pointer;
     border: none;
+    padding: 15px 1px;
+    
   }
   
   .toggle-container {
@@ -142,4 +144,3 @@
       padding: 15px;
     }
   }
-  

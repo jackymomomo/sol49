@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth, db } from '../firebase-config'; // Make sure you import your Firebase auth and db
 import { doc, getDoc } from 'firebase/firestore';
 import '../styles/EnergyStatistics.css';
+import NavBar from './navbar';
 
 
   function Dashboard() {
@@ -18,8 +18,8 @@ import '../styles/EnergyStatistics.css';
     const [isLoading, setIsLoading] = useState(false);
 
     const totalCapacity = 14.3; // Total capacity of the battery in kWh
-    const nominalVoltage = 153.6; // Nominal voltage in V
-    const maxChargeCurrent = 200; // Max charge current in A
+    const nominalVoltage = 1503.6; // Nominal voltage in V
+    const maxChargeCurrent = 2000; // Max charge current in A
     // Calculate the percentages
     const kWhPercentage = (parseFloat(totalForwardEnergy) / totalCapacity) * 100;
     const ampsPercentage = (parseFloat(amps) / maxChargeCurrent) * 100;
@@ -44,7 +44,7 @@ import '../styles/EnergyStatistics.css';
           }
         } else {
           // Redirect or handle the case where there is no signed-in user
-          navigate('/login'); // Example redirection
+          navigate('/'); // Example redirection
         }
       };
     
@@ -56,7 +56,7 @@ import '../styles/EnergyStatistics.css';
       if (deviceID) {
         const interval = setInterval(() => {
           fetchDeviceStatus();
-        }, 3100);
+        }, 500);
     
         return () => clearInterval(interval);
       }
@@ -73,8 +73,8 @@ import '../styles/EnergyStatistics.css';
 
       // Extract and convert data
       const voltage = ((data[0] << 8) | data[1]) / 10; // Voltage in volts
-      const current = ((data[2] << 16) | (data[3] << 8) | data[4]) / 1000; // Current in amps
-      const power = ((data[5] << 16) | (data[6] << 8) | data[7]) / 1000; // Power in kW
+      const current = ((data[2] << 16) | (data[3] << 8) | data[4]) / 1000 ; // Current in amps
+      const power = ((data[5] << 16) | (data[6] << 8) | data[7]) / 1000 * 1000; // Power in kW
 
       return { voltage, current, power };
     }
@@ -91,7 +91,7 @@ import '../styles/EnergyStatistics.css';
         if (totalForwardEnergyObj) {
           const energy = totalForwardEnergyObj.value;
           const formattedEnergy = (energy / 100).toFixed(2); // Keep it as numeric for calculation
-          const batteryCapacityPercentage = ((parseFloat(formattedEnergy) / .19) * 100).toFixed(2);
+          const batteryCapacityPercentage = ((parseFloat(formattedEnergy) / 14.3) * 100).toFixed(2);
           setTotalForwardEnergy(`${formattedEnergy} kWh`); // Update totalForwardEnergy as usual
           setBatteryPercentage(`${batteryCapacityPercentage}%`); // Update battery percentage
         }
@@ -133,13 +133,15 @@ import '../styles/EnergyStatistics.css';
     };
 
     return (
+      <div>
+        <NavBar/>
       <div className='card'>
       <h2>Energy Measurements</h2>
       <div className="measurements-container">
       <div className="measurement-box">
-      <span>Amps:</span>
-        <div className="graph-bar"><div className="graph-value" style={{  width: `${ampsPercentage}%`}}></div></div>
-        <span>{amps}</span>
+        <span>Watts:</span>
+        <div className="graph-bar"><div className="graph-value" style={{  width: `${kWPercentage}%` }}>
+           {kW}</div></div>
       </div>
       <div className="measurement-box">
         <span>kWh:</span>
@@ -148,10 +150,9 @@ import '../styles/EnergyStatistics.css';
         <span>Battery Usage: {batteryPercentage}</span>
       </div>
       <div className="measurement-box">
-        <span>kW:</span>
-        <div className="graph-bar"><div className="graph-value" style={{  width: `${kWPercentage}%` }}>
-           {kW}</div></div>
-        <span>{kW}</span>
+      <span>Amps:</span>
+        <div className="graph-bar"><div className="graph-value" style={{  width: `${ampsPercentage}%`}}></div></div>
+        <span>{amps}</span>
       </div>
       <div className="measurement-box">
         <span>Volts:</span>
@@ -182,6 +183,7 @@ import '../styles/EnergyStatistics.css';
           </div>
         </div>
           </div>
+      </div>
     );
   }
 

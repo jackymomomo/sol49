@@ -55,13 +55,13 @@ function AuthForm() {
         try {
             const result = await signInWithPopup(auth, googleProvider);
             console.log('Signed in with Google successfully');
-    
+
             // Define the user's document reference in Firestore
             const userDocRef = doc(db, 'users', result.user.uid);
-    
+
             // Attempt to fetch the user's document
             const userDoc = await getDoc(userDocRef);
-    
+
             if (!userDoc.exists()) {
                 await setDoc(userDocRef, {
                     email: result.user.email,
@@ -84,8 +84,8 @@ function AuthForm() {
             console.error('Error signing in with Google:', error.message);
         }
     };
-    
-    
+
+
 
     return (
         <div className={`container ${isRightPanelActive ? "right-panel-active" : ""}`} id="container">
@@ -114,13 +114,12 @@ function AuthForm() {
                             </svg>
                             {/* Sign in with Google */}
                         </button>                    </div>
-                    <span>or use your email for registration</span>
-                    <input type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-                    <input type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-                    <input type="text" placeholder="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-                    <input type="text" placeholder="Device ID" value={deviceID} onChange={(e) => setDeviceID(e.target.value)} /> {/* Input for device_id */}
-                    <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <input className='createinput' type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+                    <input className='createinput' type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
+                    <input className='createinput' type="text" placeholder="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                    <input className='createinput' type="text" placeholder="Device ID" value={deviceID} onChange={(e) => setDeviceID(e.target.value)} /> {/* Input for device_id */}
+                    <input className='createinput' type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <input className='createinput' type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     <button>Sign Up</button>
                 </form>
             </div>
@@ -149,28 +148,27 @@ function AuthForm() {
                             </svg>
                             {/* Sign in with Google */}
                         </button>                    </div>
-                    <span>or use your account</span>
-                    <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <input className='logininput' type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <input className='logininput' type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     <a href="#">Forgot your password?</a>
                     <button>Sign In</button>
                 </form>
             </div>
             <div className="overlay-container">
                 <div className="overlay">
-                    <div className="overlay-panel overlay-left">
-                        <h1>Welcome Back!</h1>
-                        <p>To keep connected with us please login with your personal info</p>
-                        <button className="ghost" id="signIn" onClick={() => setIsRightPanelActive(false)}>Sign In</button>
-                    </div>
-                    <div className="overlay-panel overlay-right">
-                        <h1>Hello, Friend!</h1>
-                        <p>Enter your personal details and start journey with us</p>
-                        <button className="ghost" id="signUp" onClick={() => setIsRightPanelActive(true)}>Sign Up</button>
-                    </div>
+       < div className="overlay-panel overlay-left">
+                    <h1 className='signupheader'>Welcome Back!</h1>
+                    <p>Please login to see your passive income</p>
+                    <button className="ghost" id="signIn" onClick={() => setIsRightPanelActive(false)}>Sign In</button>
+                </div>
+                <div className="overlay-panel overlay-right">
+                    <h1 className='signupheader'>Hello, Friend!</h1>
+                    <p>Start your sol49 journey</p>
+                    <button className="ghost" id="signUp" onClick={() => setIsRightPanelActive(true)}>Sign Up</button>
                 </div>
             </div>
         </div>
+        </div >
     );
 }
 

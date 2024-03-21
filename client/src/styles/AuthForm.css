@@ -16,15 +16,15 @@ body {
 	margin: -20px 0 50px;
 }
 
-h1 {
+/* h1 {
 	font-weight: bold;
 	margin: 0;
     color: black;
-}
+} */
 
-h2 {
+/* h2 {
 	text-align: center;
-}
+} */
 
 p {
 	font-size: 14px;
@@ -48,8 +48,8 @@ a {
 
 button {
 	border-radius: 20px;
-	border: 1px solid #c8e40f;
-	background-color: #e5db17;
+	border: 1px solid #000000;
+	background-color: #ffffff;
 	color: #000000;
 	font-size: 12px;
 	font-weight: bold;
@@ -83,10 +83,19 @@ form {
 	text-align: center;
 }
 
-input {
+
+.logininput {
 	background-color: #eee;
 	border: none;
 	padding: 12px 15px;
+	margin: 8px 0;
+	width: 100%;
+}
+
+.createinput {
+	background-color: #eee;
+	border: none;
+	padding: 9px 12px;
 	margin: 8px 0;
 	width: 100%;
 }
@@ -164,7 +173,7 @@ input {
 .overlay {
 	background: #14f9d3;
 	/* background: -webkit-linear-gradient(to right, #2402ff, #17d206); */
-	background: linear-gradient(to right, #ffffcf, #fcf9b1);
+	background: linear-gradient(to right, #bbdee2, #ffffcd);
 	background-repeat: no-repeat;
 	background-size: cover;
 	background-position: 0 0;
