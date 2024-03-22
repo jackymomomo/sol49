@@ -56,7 +56,7 @@ import NavBar from './navbar';
       if (deviceID) {
         const interval = setInterval(() => {
           fetchDeviceStatus();
-        }, 500);
+        }, 1500);
     
         return () => clearInterval(interval);
       }

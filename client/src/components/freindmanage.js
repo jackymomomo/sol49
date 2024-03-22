@@ -79,7 +79,7 @@ function FriendRequests() {
         {friendRequests.length > 0 ? (
           friendRequests.map((request) => (
             <li key={request.id}>
-              {request.senderName} {/* Displaying the sender's name */}
+              {request.senderName} {/* Trying to Display the sender's name but failing miserably */}
               <button onClick={() => handleAccept(request.id, request.senderId)}>Accept</button>
               <button onClick={() => handleDecline(request.id)}>Decline</button>
             </li>
