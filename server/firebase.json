@@ -20,6 +20,12 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/storage/**",
+        "destination": "https://firebasestorage.googleapis.com/v0/b/watt-street.appspot.com/o/{,}"
+      }
     ]
   }
 }
