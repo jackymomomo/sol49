@@ -6,6 +6,7 @@ import Dashboard from './components/dashboard.js';
 import AddFriends from './components/friendAdd.js';
 import AdditionalUserInfo from './components/extraGoogleUserInfo.js';
 import UserProfile from './components/userprofile.js';
+import Settings from './components/settings.js';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -39,6 +40,11 @@ function App() {
         <Route path="/additional-info" element={
           <ProtectedRoute>
             <AdditionalUserInfo />
+          </ProtectedRoute>
+        } />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <Settings />
           </ProtectedRoute>
         } />
         <Route path="/editprofile" element={ // Add the UserProfile component as a protected route

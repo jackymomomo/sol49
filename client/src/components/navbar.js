@@ -12,7 +12,7 @@ export default function NavBar({type, onClick, click}) {
           <li><Link to="/dashboard">Home</Link></li> {/* Use Link instead of a */}
           <li><Link to="/friends">Friends</Link></li> {/* Correct the spelling of 'friends' */}
           <li><Link to="/history">History</Link></li>
-          <li><Link to="/editprofile">Settings</Link></li>
+          <li><Link to="/settings">Settings</Link></li>
           <li><Link to="/editprofile">profile</Link></li>
         </ul>
       </nav>
