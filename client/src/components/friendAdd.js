@@ -83,7 +83,6 @@ const sendFriendRequest = async (receiverId) => {
         onChange={(e) => setSearchTerm(e.target.value)}
         placeholder="Search by name or email"
       />
-      <button onClick={() => navigate('/dashboard')}>Back</button>
       <ul>
         {searchResults.map((user) => (
           <li key={user.id}>

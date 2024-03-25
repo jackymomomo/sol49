@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase-config'; 
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import NavBar from './navbar';
 
 const Settings = () => {
     const [minPrice, setMinPrice] = useState(0);
@@ -46,6 +47,7 @@ const Settings = () => {
 
     return (
         <div>
+            <NavBar/>
             <h1>Power Sharing Settings</h1>
             <form onSubmit={handleSubmit}>
                 <label>
