@@ -1,24 +1,27 @@
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
 const express = require('express');
 const { TuyaContext } = require('@tuya/tuya-connector-nodejs');
 const axios = require('axios');
 const cors = require('cors');
 
+admin.initializeApp();
 
 const app = express();
-const port = 3001;
-
 
 // Initialize TuyaContext with your Tuya credentials
+// Note: It's better to use environment variables for sensitive information
 const tuya = new TuyaContext({
   baseUrl: 'https://openapi.tuyaus.com',
-  accessKey: '3xmddyfr5smt4fjfvema', // Replace with your Access Key
-  secretKey: '1f798ac5ce304b88b575df687dfa5f67', // Replace with your Secret Key
+  accessKey: functions.config().tuya.accesskey, // Use environment variables
+  secretKey: functions.config().tuya.secretkey, // Use environment variables
   rpc: axios,
 });
 
-app.use(cors()); // Enable CORS for all origins (Adjust in production)
+app.use(cors({ origin: true })); // Adjust in production as needed
 app.use(express.json());
-// Endpoint to get device statusi
+
+// Endpoint to get device status
 app.get('/device-status/:deviceId', async (req, res) => {
   const { deviceId } = req.params;
   try {
@@ -33,11 +36,10 @@ app.get('/device-status/:deviceId', async (req, res) => {
   }
 });
 
-
 // Endpoint to toggle device switch
 app.post('/device-action/:deviceId', async (req, res) => {
   const { deviceId } = req.params;
-  const { newState } = req.body; // Ensure the request body contains 'newState' key with boolean value
+  const { newState } = req.body;
 
   try {
     const response = await tuya.request({
@@ -54,6 +56,5 @@ app.post('/device-action/:deviceId', async (req, res) => {
   }
 });
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server listening on port ${port}`);
-});
+// Export the app to Firebase Functions
+exports.api = functions.https.onRequest(app);

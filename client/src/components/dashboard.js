@@ -82,7 +82,7 @@ import NavBar from './navbar';
     const fetchDeviceStatus = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get(`http://192.168.1.110:3001/device-status/${deviceID}`);
+        const response = await axios.get(`https://us-central1-watt-street.cloudfunctions.net/api/device-status/${deviceID}`);
         const results = response.data.result;
 
         const totalForwardEnergyObj = results.find(
@@ -121,7 +121,7 @@ import NavBar from './navbar';
       setIsLoading(true);
       try {
         const currentSwitchState = deviceStatus?.switch;
-        await axios.post(`http://192.168.1.110:3001/device-action/${deviceID}`, {
+        await axios.post(`https://us-central1-watt-street.cloudfunctions.net/api/device-action/${deviceID}`, {
           newState: !currentSwitchState,
         });
         setDeviceStatus({ ...deviceStatus, switch: !currentSwitchState });
