@@ -9,7 +9,7 @@ import UserProfile from './components/userprofile.js';
 import Settings from './components/settings.js';
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null); 
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
@@ -22,6 +22,8 @@ function App() {
   const ProtectedRoute = ({ children }) => {
     return currentUser ? children : <Navigate to="/" />;
   };
+
+  serviceWorkerRegistration.register();
 
   return (
     <Router>
