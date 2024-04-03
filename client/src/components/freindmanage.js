@@ -7,16 +7,16 @@ function FriendRequests() {
     const currentUserId = auth.currentUser ? auth.currentUser.uid : null;
   
     const getUserNameById = async (userId) => {
-        const userRef = doc(db, 'users', userId);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          return userSnap.data().name; // Ensure 'name' is the correct field
-        } else {
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+          return userSnap.data().name; // Ensure this matches the field name in your Firestore
+      } else {
           console.log(`User not found: ${userId}`);
-          return 'Unknown User'; // Fallback if the user document doesn't exist
-        }
-      };
-
+          return 'Unknown User';
+      }
+  };
+  
       useEffect(() => {
         const fetchFriendRequests = async () => {
           if (!currentUserId) return;

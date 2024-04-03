@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, getDocs, addDoc } from 'firebase/firestore';
-import { db } from '../firebase-config';
+import { db, auth } from '../firebase-config';
 import { useNavigate } from 'react-router-dom';
 import NavBar from './navbar';
 import { debounce } from 'lodash'; // Make sure lodash is installed
@@ -35,34 +35,30 @@ function AddFriends() {
     }
   };
 
-// Function to send a friend request
-const sendFriendRequest = async (receiverId) => {
-  const currentUserId = 'currentUserId'; // Replace this with the actual current user's ID
+  const sendFriendRequest = async (receiverId) => {
+    const currentUserId = auth.currentUser ? auth.currentUser.uid : null; // Correctly get the current user's ID
+    if (!currentUserId) {
+        console.error("User is not logged in.");
+        return;
+    }
 
-  // Prevent sending a friend request to oneself
-  if (receiverId === currentUserId) {
-    alert("You cannot send a friend request to yourself.");
-    return;
-  }
+    if (receiverId === currentUserId) {
+        alert("You cannot send a friend request to yourself.");
+        return;
+    }
 
-  // Firestore path where friend requests are stored
-  const friendRequestsRef = collection(db, 'friendRequests');
-
-  // Check for existing friend request or friendship before adding a new request
-  // This step is skipped here for simplicity, but you should implement it to avoid duplicate requests
-
-  try {
-    await addDoc(friendRequestsRef, {
-      senderId: currentUserId,
-      receiverId: receiverId,
-      status: 'pending', // Initial status of the friend request
-      // Timestamps and other fields can be added here
-    });
-    alert('Friend request sent!');
-  } catch (error) {
-    console.error("Error sending friend request: ", error);
-    alert('Failed to send friend request.');
-  }
+    const friendRequestsRef = collection(db, 'friendRequests');
+    try {
+        await addDoc(friendRequestsRef, {
+            senderId: currentUserId,
+            receiverId: receiverId,
+            status: 'pending',
+        });
+        alert('Friend request sent!');
+    } catch (error) {
+        console.error("Error sending friend request: ", error);
+        alert('Failed to send friend request.');
+    }
 };
 
   // Debounced search to reduce number of executions while typing

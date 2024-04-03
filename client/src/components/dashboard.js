@@ -149,7 +149,7 @@ import NavBar from './navbar';
         <span>{totalForwardEnergy}</span>
         <span>Battery Usage: {batteryPercentage}</span>
       </div>
-      <div className="measurement-box">
+      {/* <div className="measurement-box">
       <span>Amps:</span>
         <div className="graph-bar"><div className="graph-value" style={{  width: `${ampsPercentage}%`}}></div></div>
         <span>{amps}</span>
@@ -158,7 +158,7 @@ import NavBar from './navbar';
         <span>Volts:</span>
         <div className="graph-bar"><div className="graph-value" style={{  width: `${voltsPercentage}%` }}></div></div>
         <span>{volts}</span>
-      </div>
+      </div> */}
 </div>
         <div className="toggle-wrapper">
           <input className="toggle-checkbox" type="checkbox" checked={deviceStatus?.switch} onClick={toggleDeviceSwitch} />
