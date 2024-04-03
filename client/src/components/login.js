@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth, googleProvider } from '../firebase-config';
-import { createUserWithEmailAndPassword, signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithPopup, signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase-config'; // Adjust the import path as needed
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -14,6 +14,7 @@ function AuthForm() {
     const [address, setAddress] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [deviceID, setDeviceID] = useState(''); // State hook for device_id
+    const [rememberMe, setRememberMe] = useState(false);
 
     const navigate = useNavigate();
 
@@ -21,6 +22,7 @@ function AuthForm() {
         e.preventDefault();
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence); // Set persistence based on the checkbox
             console.log('Account created successfully');
             // Now include device_id in the Firestore document
             await setDoc(doc(db, 'users', userCredential.user.uid), {
@@ -41,6 +43,7 @@ function AuthForm() {
     const handleSignIn = async (e) => {
         e.preventDefault();
         try {
+            await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence); // Set persistence based on the checkbox
             await signInWithEmailAndPassword(auth, email, password);
             console.log('Signed in with email successfully');
             // Handle successful sign-in
@@ -151,23 +154,30 @@ function AuthForm() {
                     <input className='logininput' type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
                     <input className='logininput' type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     <a href="#">Forgot your password?</a>
+                    <input
+    type="checkbox"
+    id="rememberMe"
+    checked={rememberMe}
+    onChange={(e) => setRememberMe(e.target.checked)}
+/>
+<label htmlFor="rememberMe">Remember Me</label>
                     <button>Sign In</button>
                 </form>
             </div>
             <div className="overlay-container">
                 <div className="overlay">
-       < div className="overlay-panel overlay-left">
-                    <h1 className='signupheader'>Welcome Back!</h1>
-                    <p>Please login to see your passive income</p>
-                    <button className="ghost" id="signIn" onClick={() => setIsRightPanelActive(false)}>Sign In</button>
-                </div>
-                <div className="overlay-panel overlay-right">
-                    <h1 className='signupheader'>Hello, Friend!</h1>
-                    <p>Start your sol49 journey</p>
-                    <button className="ghost" id="signUp" onClick={() => setIsRightPanelActive(true)}>Sign Up</button>
+                    < div className="overlay-panel overlay-left">
+                        <h1 className='signupheader'>Welcome Back!</h1>
+                        <p>Please login to see your passive income</p>
+                        <button className="ghost" id="signIn" onClick={() => setIsRightPanelActive(false)}>Sign In</button>
+                    </div>
+                    <div className="overlay-panel overlay-right">
+                        <h1 className='signupheader'>Hello, Friend!</h1>
+                        <p>Start your sol49 journey</p>
+                        <button className="ghost" id="signUp" onClick={() => setIsRightPanelActive(true)}>Sign Up</button>
+                    </div>
                 </div>
             </div>
-        </div>
         </div >
     );
 }

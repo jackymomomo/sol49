@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { auth } from './firebase-config'; // Ensure you have the correct path
+import { auth } from './firebase-config';
 import AuthForm from './components/login.js';
 import Dashboard from './components/dashboard.js';
 import AddFriends from './components/friendAdd.js';
@@ -9,52 +9,39 @@ import UserProfile from './components/userprofile.js';
 import Settings from './components/settings.js';
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(null); 
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true); // New state to track loading of auth state
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
+      setLoading(false); // Set loading to false once we get the auth state
     });
 
-    return () => unsubscribe(); // Cleanup the subscription
+    return () => unsubscribe();
   }, []);
 
   const ProtectedRoute = ({ children }) => {
+    if (loading) {
+      return <div>Loading...</div>; // Or any other loading indicator
+    }
+
     return currentUser ? children : <Navigate to="/" />;
   };
 
-  serviceWorkerRegistration.register();
+  if (loading) {
+    return <div>Loading...</div>; // Show loading indicator while checking auth state
+  }
 
   return (
     <Router>
       <Routes>
         <Route path="/" element={<AuthForm />} />
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/friends" element={
-          <ProtectedRoute>
-            <AddFriends />
-          </ProtectedRoute>
-        } />
-        <Route path="/additional-info" element={
-          <ProtectedRoute>
-            <AdditionalUserInfo />
-          </ProtectedRoute>
-        } />
-        <Route path="/settings" element={
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        } />
-        <Route path="/editprofile" element={ // Add the UserProfile component as a protected route
-          <ProtectedRoute>
-            <UserProfile userId={currentUser?.uid} />
-          </ProtectedRoute>
-        } />
-        {/* Redirect unknown paths to AuthForm or a specific "NotFound" component */}
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/friends" element={<ProtectedRoute><AddFriends /></ProtectedRoute>} />
+        <Route path="/additional-info" element={<ProtectedRoute><AdditionalUserInfo /></ProtectedRoute>} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/editprofile" element={<ProtectedRoute><UserProfile userId={currentUser?.uid} /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
