@@ -16,15 +16,35 @@ body {
 	margin: -20px 0 50px;
 }
 
-/* h1 {
-	font-weight: bold;
-	margin: 0;
-    color: black;
-} */
-
-/* h2 {
-	text-align: center;
-} */
+/* Custom Checkbox Style */
+.custom-checkbox-container {
+	display: flex;
+	align-items: center;
+	font-family: 'Roboto', sans-serif; /* Cool font */
+	margin: 15px 0; /* Adds some space around the component */
+	margin-right: 27px
+  }
+  
+  .custom-checkbox-container input[type="checkbox"] {
+	accent-color: #4CAF50; /* Change this color to change the checkbox color */
+	width: 16px; /* Smaller checkbox */
+	height: 16px; /* Smaller checkbox */
+  }
+  
+  .custom-checkbox-container label {
+	color: #333; /* Initial label color */
+	font-size: 14px; /* Smaller font size */
+	padding: 5px 10px; /* Padding around the label text */
+	border-radius: 5px; /* Slight rounding of corners */
+	transition: background-color 0.3s, color 0.3s; /* Smooth transition for color change */
+  }
+  
+  /* Styling when checkbox is checked */
+  .custom-checkbox-container input[type="checkbox"]:checked + label {
+	background-color: #4CAF50; /* Background color when checked */
+	color: white; /* Label text color when checked */
+  }
+  
 
 p {
 	font-size: 14px;

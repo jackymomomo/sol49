@@ -154,13 +154,16 @@ function AuthForm() {
                     <input className='logininput' type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
                     <input className='logininput' type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     <a href="#">Forgot your password?</a>
-                    <input
-    type="checkbox"
-    id="rememberMe"
-    checked={rememberMe}
-    onChange={(e) => setRememberMe(e.target.checked)}
-/>
-<label htmlFor="rememberMe">Remember Me</label>
+                    <div className="custom-checkbox-container">
+                        <input
+                            type="checkbox"
+                            id="rememberMe"
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                        />
+                        <label htmlFor="rememberMe">Remember Me</label>
+                    </div>
+
                     <button>Sign In</button>
                 </form>
             </div>
