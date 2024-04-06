@@ -1,57 +1,95 @@
 .user-profile-container {
-    max-width: 1360px;
-    margin: 40px auto;
-    padding: 20px;
-    background: #f0f0f0;
-    border-radius: 8px;
+  max-width: 1360px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #f0f0f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.profile-image-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  margin-bottom: 20px;
+  object-fit: cover;
+  border: 3px solid #667eea;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-field {
+  position: relative;
+  margin-bottom: 20px;
+  width: 80%;
+}
+
+.form-field input {
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid #999;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-field input:focus,
+.form-field input:valid {
+  border-bottom-color: #667eea;
+}
+
+.form-field label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  transition: all 0.2s;
+}
+
+.form-field input:focus ~ label,
+.form-field input:valid ~ label {
+  top: -20px;
+  font-size: 14px;
+  color: #667eea;
+}
+
+.form-submit-button {
+  padding: 10px 20px;
+  border: none;
+  background-color: #667eea;
+  color: white;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 10px; // Ensure some spacing above the button for aesthetics
+}
+
+.form-submit-button:hover {
+  background-color: #5866c1;
+}
+
+// Additional styling to improve the aesthetics of the form and its elements
+input[type="file"] {
+  cursor: pointer;
+}
+
+// Style adjustments for responsiveness and aesthetics
+@media (max-width: 768px) {
+  .user-profile-container {
+    padding: 15px;
+    margin: 20px auto;
   }
-  
+
+  .profile-image-preview {
+    width: 100px;
+    height: 100px;
+  }
+
   .form-field {
-    position: relative;
-    margin-bottom: 20px;
-  }
-  
-  .form-field input {
     width: 100%;
-    padding: 10px;
-    background: none;
-    border: none;
-    border-bottom: 2px solid #999;
-    outline: none;
-    transition: border-color 0.2s;
   }
-  
-  .form-field input:focus,
-  .form-field input:valid {
-    border-bottom-color: #667eea;
-  }
-  
-  .form-field label {
-    position: absolute;
-    top: 0;
-    left: 0;
-    pointer-events: none;
-    transition: all 0.2s;
-  }
-  
-  .form-field input:focus ~ label,
-  .form-field input:valid ~ label {
-    top: -20px;
-    font-size: 14px;
-    color: #667eea;
-  }
-  
-  .form-submit-button {
-    padding: 10px 20px;
-    border: none;
-    background-color: #667eea;
-    color: white;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .form-submit-button:hover {
-    background-color: #5866c1;
-  }
-  
+}

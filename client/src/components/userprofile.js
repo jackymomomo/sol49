@@ -12,6 +12,7 @@ const UserProfile = ({ userId }) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [deviceID, setDeviceID] = useState('');
     const [profileImage, setProfileImage] = useState(null); // State for the profile image file
+    const [profileImageUrl, setProfileImageUrl] = useState(''); // State to hold the temporary URL for preview
 
     const navigate = useNavigate();
 
@@ -27,6 +28,8 @@ const UserProfile = ({ userId }) => {
                 setPhoneNumber(userData.phoneNumber || '');
                 setDeviceID(userData.deviceID || '');
                 // Optionally, you can also fetch and set the image URL if it exists
+                // Set the profile image URL if it exists for displaying
+                setProfileImageUrl(userData.profileImageUrl || '');
             } else {
                 console.log('No such document!');
             }
@@ -37,17 +40,19 @@ const UserProfile = ({ userId }) => {
     const handleFileChange = (e) => {
         if (e.target.files[0]) {
             setProfileImage(e.target.files[0]);
+            // Generate a URL for the file to preview the image
+            setProfileImageUrl(URL.createObjectURL(e.target.files[0]));
         }
     };
 
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            let imageUrl = '';
+            let imageUrl = profileImageUrl; // Use existing image URL by default
             if (profileImage) {
                 const imageRef = ref(storage, `profileImages/${userId}/${profileImage.name}`);
                 const snapshot = await uploadBytes(imageRef, profileImage);
-                imageUrl = await getDownloadURL(snapshot.ref);
+                imageUrl = await getDownloadURL(snapshot.ref); // Update with the new image URL
             }
             const userDocRef = doc(db, 'users', userId);
             await updateDoc(userDocRef, {
@@ -56,7 +61,7 @@ const UserProfile = ({ userId }) => {
                 address,
                 phoneNumber,
                 deviceID,
-                profileImageUrl: imageUrl, // Save the image URL in Firestore
+                profileImageUrl: imageUrl, // Save the new image URL in Firestore
             });
             console.log('User profile updated successfully');
             navigate('/dashboard');
@@ -68,6 +73,10 @@ const UserProfile = ({ userId }) => {
     return (
         <div className="user-profile-container">
             <h2>Edit Profile</h2>
+            {/* Display the profile image if available */}
+            {profileImageUrl && (
+                <img src={profileImageUrl} alt="Profile" className="profile-image-preview" />
+            )}
             <form onSubmit={handleUpdate} className="user-profile-form">
                 <div className="form-field">
                     <input type="text" id="name" required value={name} onChange={(e) => setName(e.target.value)} />
