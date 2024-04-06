@@ -5,14 +5,14 @@ import { getFirestore } from 'firebase/firestore'; // Import Firestore
 import { getStorage } from "firebase/storage"; // Import the storage service
 
 const firebaseConfig = {
-    apiKey: "AIzaSyABNECZzFs3Y-av6ejhQSC1d_6fMSN0Ok0",
-    authDomain: "watt-street.firebaseapp.com",
-    projectId: "watt-street",
-    storageBucket: "watt-street.appspot.com",
-    messagingSenderId: "62980562466",
-    appId: "1:62980562466:web:b52d6eed071514f33bb47b",
-    measurementId: "G-BS0TXHPC9D"
-  };
+  apiKey: "AIzaSyABNECZzFs3Y-av6ejhQSC1d_6fMSN0Ok0",
+  authDomain: "watt-street.firebaseapp.com",
+  projectId: "watt-street",
+  storageBucket: "watt-street.appspot.com",
+  messagingSenderId: "62980562466",
+  appId: "1:62980562466:web:889f6e2a2bce04a13bb47b",
+  measurementId: "G-RMXHCLHQX6"
+};
   
   // Initialize Firebase
   const app = initializeApp(firebaseConfig);

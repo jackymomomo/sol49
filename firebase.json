@@ -15,6 +15,7 @@
     }
   ],
   "hosting": {
+    "site": "sol49",
     "public": "client/build",
     "ignore": [
       "firebase.json",
