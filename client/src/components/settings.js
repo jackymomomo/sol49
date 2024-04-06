@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase-config';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate hook
+import { useNavigate } from 'react-router-dom';
 import NavBar from './navbar';
+import '../scss/settings.scss';
 
 const Settings = () => {
-    const [minPrice, setMinPrice] = useState(0);
-    const [maxPrice, setMaxPrice] = useState(0);
-    const [maxKWh, setMaxKWh] = useState(0);
+    const [minPrice, setMinPrice] = useState(0.0975); // Adjusted default to BC Hydro Step 1 energy charge
+    const [maxPrice, setMaxPrice] = useState(0.1408); // Adjusted default to BC Hydro Step 2 energy charge
+    const [maxKWh, setMaxKWh] = useState(1376); // Adjusted default to BC Hydro first step limit
     const auth = getAuth();
     const firestore = getFirestore();
-    const navigate = useNavigate(); // Initialize the useNavigate hook
+    const navigate = useNavigate();
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -29,12 +30,10 @@ const Settings = () => {
             }
         });
 
-        return () => unsubscribe(); // Clean up subscription
+        return () => unsubscribe();
     }, [auth, firestore]);
 
-    const handleMinPriceChange = (e) => setMinPrice(e.target.value);
-    const handleMaxPriceChange = (e) => setMaxPrice(e.target.value);
-    const handleMaxKWhChange = (e) => setMaxKWh(e.target.value);
+    const handleSliderChange = (setter) => (e) => setter(parseFloat(e.target.value));
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -46,7 +45,7 @@ const Settings = () => {
                 setDoc(userSettingsRef, { minPrice, maxPrice, maxKWh }, { merge: true })
                     .then(() => {
                         console.log("Settings saved successfully");
-                        navigate('/dashboard'); // Navigate to /dashboard after saving
+                        navigate('/dashboard');
                     })
                     .catch((error) => console.error("Error saving settings: ", error));
             }
@@ -54,25 +53,28 @@ const Settings = () => {
     };
 
     return (
-        <div>
+        <div className="settings-container">
             <NavBar/>
             <h1>Power Sharing Settings</h1>
             <form onSubmit={handleSubmit}>
-                <label>
-                    Minimum Price (per kWh):
-                    <input type="number" value={minPrice} onChange={handleMinPriceChange} />
-                </label>
-                <br />
-                <label>
-                    Maximum Price (per kWh):
-                    <input type="number" value={maxPrice} onChange={handleMaxPriceChange} />
-                </label>
-                <br />
-                <label>
-                    Maximum kWh to Sell:
-                    <input type="number" value={maxKWh} onChange={handleMaxKWhChange} />
-                </label>
-                <br />
+                <div className="slider-container">
+                    <label>
+                        Minimum Price (per kWh): ${minPrice.toFixed(4)}
+                        <input type="range" min="0" max="1.1408" value={minPrice} onChange={handleSliderChange(setMinPrice)} step="0.0001" />
+                    </label>
+                </div>
+                <div className="slider-container">
+                    <label>
+                        Maximum Price (per kWh): ${maxPrice.toFixed(4)}
+                        <input type="range" min="0.0975" max="1.1408" value={maxPrice} onChange={handleSliderChange(setMaxPrice)} step="0.0001" />
+                    </label>
+                </div>
+                <div className="slider-container">
+                    <label>
+                        Maximum kWh to Sell: {maxKWh} kWh
+                        <input type="range" min="0" max="2000" value={maxKWh} onChange={handleSliderChange(setMaxKWh)} step="1" />
+                    </label>
+                </div>
                 <button type="submit">Save</button>
             </form>
         </div>
