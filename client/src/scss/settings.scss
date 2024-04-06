@@ -1,0 +1,28 @@
+/* Base styles */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 500px;
+    margin: auto;
+}
+
+input[type="number"] {
+    width: 100%;
+    padding: 8px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 24px;
+    }
+
+    label {
+        font-size: 18px;
+    }
+
+    input[type="number"] {
+        padding: 12px;
+    }
+}
