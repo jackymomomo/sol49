@@ -1,0 +1,76 @@
+$primary-color: #4a90e2;
+$light-bg: #f0f4f8;
+$text-color: #333;
+$tab-bg: #e4e7eb;
+$tab-active-bg: #fff;
+
+@mixin fr-tabStyle {
+  padding: 10px 20px;
+  cursor: pointer;
+  background-color: $tab-bg;
+  border: none;
+  outline: none;
+  &:hover {
+    background-color: darken($tab-bg, 5%);
+  }
+}
+
+.fr-friend-requests {
+  padding: 20px;
+  background-color: $light-bg;
+  color: $text-color;
+  font-family: 'Arial', sans-serif;
+
+  &__tabs {
+    display: flex;
+    margin-bottom: 20px;
+
+    &__tab {
+      @include fr-tabStyle;
+      
+      &--active {
+        background-color: $tab-active-bg;
+        border-bottom: 2px solid $primary-color;
+      }
+    }
+  }
+
+  &__list {
+    list-style: none;
+    padding: 0;
+    margin-top: 0;
+  }
+
+  &__item {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+    &__img {
+      width: 40px;
+      height: 40px;
+      border-radius: 20px;
+      margin-right: 10px;
+    }
+
+    &__info {
+      flex-grow: 1;
+    }
+  }
+
+  &__button {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: $primary-color;
+    color: #fff;
+    cursor: pointer;
+    &:hover {
+      background-color: darken($primary-color, 10%);
+    }
+  }
+}
