@@ -117,7 +117,7 @@ import NavBar from './navbar';
       }
     };
 
-    const toggleDeviceSwitch = async () => {
+    const toggleDeviceSwitch = async (event) => {
       setIsLoading(true);
       try {
         const currentSwitchState = deviceStatus?.switch;
@@ -131,7 +131,7 @@ import NavBar from './navbar';
         setIsLoading(false);
       }
     };
-
+    
     return (
       <div>
         <NavBar/>
@@ -149,19 +149,14 @@ import NavBar from './navbar';
         <span>{totalForwardEnergy}</span>
         <span>Battery Usage: {batteryPercentage}</span>
       </div>
-      {/* <div className="measurement-box">
-      <span>Amps:</span>
-        <div className="graph-bar"><div className="graph-value" style={{  width: `${ampsPercentage}%`}}></div></div>
-        <span>{amps}</span>
-      </div>
-      <div className="measurement-box">
-        <span>Volts:</span>
-        <div className="graph-bar"><div className="graph-value" style={{  width: `${voltsPercentage}%` }}></div></div>
-        <span>{volts}</span>
-      </div> */}
 </div>
         <div className="toggle-wrapper">
-          <input className="toggle-checkbox" type="checkbox" checked={deviceStatus?.switch} onClick={toggleDeviceSwitch} />
+        <input
+  className="toggle-checkbox"
+  type="checkbox"
+  checked={deviceStatus?.switch}
+  onChange={toggleDeviceSwitch} // Use onChange instead of onClick
+/>
           <div className="toggle-container">  
             <div className="toggle-button">
               <div className="toggle-button-circles-container">
