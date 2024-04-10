@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth, db } from '../firebase-config'; // Make sure you import your Firebase auth and db
 import { doc, getDoc } from 'firebase/firestore';
-import '../styles/EnergyStatistics.css';
+import '../scss/energyStatistics.scss';
 import NavBar from './navbar';
 import NavBar2 from './computerNav';
+import SpeedometerGauge from './speedometer';
+import KwhGraph from './kwhGraph';
 
 
   function Dashboard() {
@@ -23,6 +25,7 @@ import NavBar2 from './computerNav';
     const nominalVoltage = 1503.6; // Nominal voltage in V
     const maxChargeCurrent = 2000; // Max charge current in A
     // Calculate the percentages
+    const maxWatts = 10000
     const kWhPercentage = (parseFloat(totalForwardEnergy) / totalCapacity) * 100;
     const ampsPercentage = (parseFloat(amps) / maxChargeCurrent) * 100;
     const voltsPercentage = (parseFloat(volts) / nominalVoltage) * 100;
@@ -143,23 +146,18 @@ import NavBar2 from './computerNav';
     };
     
     return (
-      <div>
+      <div className='dashcontainer'>
         {screenWidth < 820 ? <NavBar/> : <NavBar2/>}
       <div className='card'>
-      <h2>Energy Measurements</h2>
+      <h2>Energy Measurements</h2> 
       <div className="measurements-container">
       <div className="measurement-box">
-        <span>Watts:</span>
-        <div className="graph-bar"><div className="graph-value" style={{  width: `${kWPercentage}%` }}>
-           {kW}</div></div>
-      </div>
+      <SpeedometerGauge currentWatts={parseFloat(kW)} maxWatts={maxWatts} />
       <div className="measurement-box">
-        <span>kWh:</span>
-        <div className="graph-bar"><div className="graph-value"  style={{  width: `${kWhPercentage}%` }}></div></div>
-        <span>{totalForwardEnergy}</span>
-        <span>Battery Usage: {batteryPercentage}</span>
+      <KwhGraph totalForwardEnergy={totalForwardEnergy} />
       </div>
 </div>
+      </div>
         <div className="toggle-wrapper">
         <input
   className="toggle-checkbox"
