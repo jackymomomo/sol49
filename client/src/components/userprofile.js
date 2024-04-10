@@ -4,8 +4,11 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Import storage functions
 import { useNavigate } from 'react-router-dom';
 import '../scss/editprofile.scss';
+import NavBar from './navbar';
+import NavBar2 from './computerNav';
 
 const UserProfile = ({ userId }) => {
+    const [screenWidth, setScreenWidth] = useState(window.innerWidth);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [address, setAddress] = useState('');
@@ -15,6 +18,14 @@ const UserProfile = ({ userId }) => {
     const [profileImageUrl, setProfileImageUrl] = useState(''); // State to hold the temporary URL for preview
 
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const handleResize = () => setScreenWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+    
+        // Cleanup function to remove event listener
+        return () => window.removeEventListener('resize', handleResize);
+      }, []);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -71,6 +82,8 @@ const UserProfile = ({ userId }) => {
     };
 
     return (
+        <div>
+        { screenWidth < 768 ? <NavBar/> : <NavBar2/>}
         <div className="user-profile-container">
             <h2>Edit Profile</h2>
             {/* Display the profile image if available */}
@@ -104,6 +117,7 @@ const UserProfile = ({ userId }) => {
                 </div>
                 <button type="submit" className="form-submit-button">Update Profile</button>
             </form>
+        </div>
         </div>
     );
 };

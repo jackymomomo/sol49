@@ -5,14 +5,24 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import NavBar from './navbar';
 import '../scss/settings.scss';
+import NavBar2 from './computerNav';
 
 const Settings = () => {
+    const [screenWidth, setScreenWidth] = useState(window.innerWidth);
     const [minPrice, setMinPrice] = useState(0.0975); // Adjusted default to BC Hydro Step 1 energy charge
     const [maxPrice, setMaxPrice] = useState(0.1408); // Adjusted default to BC Hydro Step 2 energy charge
     const [maxKWh, setMaxKWh] = useState(1376); // Adjusted default to BC Hydro first step limit
     const auth = getAuth();
     const firestore = getFirestore();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const handleResize = () => setScreenWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+    
+        // Cleanup function to remove event listener
+        return () => window.removeEventListener('resize', handleResize);
+      }, []);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
@@ -54,7 +64,7 @@ const Settings = () => {
 
     return (
         <div className="settings-container">
-            <NavBar/>
+             {screenWidth < 768 ? <NavBar/> : <NavBar2/>}
             <h1>Power Sharing Settings</h1>
             <form onSubmit={handleSubmit}>
                 <div className="slider-container">

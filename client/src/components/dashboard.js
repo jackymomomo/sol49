@@ -5,9 +5,11 @@ import { auth, db } from '../firebase-config'; // Make sure you import your Fire
 import { doc, getDoc } from 'firebase/firestore';
 import '../styles/EnergyStatistics.css';
 import NavBar from './navbar';
+import NavBar2 from './computerNav';
 
 
   function Dashboard() {
+    const [screenWidth, setScreenWidth] = useState(window.innerWidth);
     const [amps, setAmps] = useState('0 A');
     const [kW, setKW] = useState('0 kW');
     const [volts, setVolts] = useState('0 V');
@@ -28,6 +30,13 @@ import NavBar from './navbar';
     const kWPercentage = (parseFloat(kW) / (nominalVoltage * maxChargeCurrent / 1000)) * 100;
     
     const navigate = useNavigate();
+    useEffect(() => {
+      const handleResize = () => setScreenWidth(window.innerWidth);
+      window.addEventListener('resize', handleResize);
+  
+      // Cleanup function to remove event listener
+      return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
       const fetchUserData = async () => {
@@ -134,7 +143,7 @@ import NavBar from './navbar';
     
     return (
       <div>
-        <NavBar/>
+        {screenWidth < 768 ? <NavBar/> : <NavBar2/>}
       <div className='card'>
       <h2>Energy Measurements</h2>
       <div className="measurements-container">

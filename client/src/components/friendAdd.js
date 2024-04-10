@@ -5,11 +5,22 @@ import { useNavigate } from 'react-router-dom';
 import NavBar from './navbar';
 import { debounce } from 'lodash'; // Make sure lodash is installed
 import FriendRequests from './freindmanage';
+import NavBar2 from './computerNav';
 
 function AddFriends() {
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+
+    // Cleanup function to remove event listener
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fetchAndFilterUsers = async (searchValue) => {
     if (!searchValue.trim()) {
@@ -72,7 +83,7 @@ function AddFriends() {
 
   return (
     <div>
-      <NavBar />
+      {screenWidth < 768 ? <NavBar/> : <NavBar2/>}
       <input
         type="text"
         value={searchTerm}
