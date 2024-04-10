@@ -8,7 +8,7 @@ const NavBar2 = () => {
   const menuItems = [
     { name: 'Home', link: '/dashboard', dataItem: 'Home' },
     { name: 'Connections', link: '/friends', dataItem: 'Connections' },
-    { name: 'History', link: '/history', dataItem: 'History' },
+    // { name: 'History', link: '/history', dataItem: 'History' },
     { name: 'Profile', link: '/editprofile', dataItem: 'Profile' },
     { name: 'Settings', link: '/settings', dataItem: 'Settings' },
   ];

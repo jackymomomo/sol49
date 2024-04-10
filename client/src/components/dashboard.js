@@ -30,6 +30,7 @@ import NavBar2 from './computerNav';
     const kWPercentage = (parseFloat(kW) / (nominalVoltage * maxChargeCurrent / 1000)) * 100;
     
     const navigate = useNavigate();
+
     useEffect(() => {
       const handleResize = () => setScreenWidth(window.innerWidth);
       window.addEventListener('resize', handleResize);
@@ -143,7 +144,7 @@ import NavBar2 from './computerNav';
     
     return (
       <div>
-        {screenWidth < 768 ? <NavBar/> : <NavBar2/>}
+        {screenWidth < 820 ? <NavBar/> : <NavBar2/>}
       <div className='card'>
       <h2>Energy Measurements</h2>
       <div className="measurements-container">

@@ -83,7 +83,7 @@ const UserProfile = ({ userId }) => {
 
     return (
         <div>
-        { screenWidth < 768 ? <NavBar/> : <NavBar2/>}
+        { screenWidth < 820 ? <NavBar/> : <NavBar2/>}
         <div className="user-profile-container">
             <h2>Edit Profile</h2>
             {/* Display the profile image if available */}

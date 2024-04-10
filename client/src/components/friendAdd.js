@@ -83,7 +83,7 @@ function AddFriends() {
 
   return (
     <div>
-      {screenWidth < 768 ? <NavBar/> : <NavBar2/>}
+      {screenWidth < 820 ? <NavBar/> : <NavBar2/>}
       <input
         type="text"
         value={searchTerm}

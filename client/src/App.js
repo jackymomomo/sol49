@@ -42,7 +42,7 @@ function App() {
         <Route path="/friends" element={<ProtectedRoute><AddFriends /></ProtectedRoute>} />
         <Route path="/additional-info" element={<ProtectedRoute><AdditionalUserInfo /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/history" element={<ProtectedRoute><NavBar2/></ProtectedRoute>} />
+        {/* <Route path="/history" element={<ProtectedRoute><NavBar2/></ProtectedRoute>} /> */}
         <Route path="/editprofile" element={<ProtectedRoute><UserProfile userId={currentUser?.uid} /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
