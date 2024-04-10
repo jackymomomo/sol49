@@ -1,12 +1,5 @@
-
-@import url('https://fonts.googleapis.com/css?family=Montserrat:400,800');
-
-* {
-	box-sizing: border-box;
-}
-
-body {
-	background: #f6f5f7;
+.auth-form {
+    background: #f6f5f7;
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -14,7 +7,13 @@ body {
 	font-family: 'Montserrat', sans-serif;
 	height: 100vh;
 	margin: -20px 0 50px;
+
+    @import url('https://fonts.googleapis.com/css?family=Montserrat:400,800');
+
+* {
+	box-sizing: border-box;
 }
+
 
 /* Custom Checkbox Style */
 .custom-checkbox-container {
@@ -388,5 +387,6 @@ footer a:hover {
         padding: 12px 30px; /* Adjust padding for comfort in landscape */
     }
 }
-
-/* Further adjustments may be needed based on specific iPhone models or personal design preferences. */
+    
+  }
+  

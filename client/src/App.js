@@ -7,6 +7,7 @@ import AddFriends from './components/friendAdd.js';
 import AdditionalUserInfo from './components/extraGoogleUserInfo.js';
 import UserProfile from './components/userprofile.js';
 import Settings from './components/settings.js';
+import NavBar2 from './components/computerNav.js';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -41,6 +42,7 @@ function App() {
         <Route path="/friends" element={<ProtectedRoute><AddFriends /></ProtectedRoute>} />
         <Route path="/additional-info" element={<ProtectedRoute><AdditionalUserInfo /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><NavBar2/></ProtectedRoute>} />
         <Route path="/editprofile" element={<ProtectedRoute><UserProfile userId={currentUser?.uid} /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

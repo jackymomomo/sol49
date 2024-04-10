@@ -4,7 +4,8 @@ import { createUserWithEmailAndPassword, signInWithPopup, signInWithEmailAndPass
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase-config'; // Adjust the import path as needed
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import '../styles/AuthForm.css';
+// import '../styles/AuthForm.css';
+import '../scss/authform.scss'
 
 function AuthForm() {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
@@ -91,6 +92,8 @@ function AuthForm() {
 
 
     return (
+        <div className="auth-form">
+
         <div className={`container ${isRightPanelActive ? "right-panel-active" : ""}`} id="container">
             <div className="form-container sign-up-container">
                 <form onSubmit={handleSignUp}>
@@ -182,6 +185,7 @@ function AuthForm() {
                 </div>
             </div>
         </div >
+        </div>
     );
 }
 
