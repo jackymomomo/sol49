@@ -13,33 +13,33 @@ const NavBar2 = () => {
     { name: 'Settings', link: '/settings', dataItem: 'Settings' },
   ];
 
-  return (
-    
+return (
     <div className="navBar2-container">
-    <div>
-    <p data-item='Sol49'>Sol49</p>
-      <section>
-        <nav>
-          <ul className="menuItems">
-            {menuItems.map((item, index) => (
-                
-              <li key={index}>
-                <a 
-                  href={item.link} 
-                  data-item={item.dataItem}
-                  onMouseEnter={() => setHoverText(item.dataItem)}
-                  onMouseLeave={() => setHoverText('')}
-                >
-                  {item.name}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </section>
+        <div>
+            <a href='https://sol49.com'>
+            <p data-item='Sol49'>Sol49</p>
+            </a>
+            <section>
+                <nav>
+                    <ul className="menuItems">
+                        {menuItems.map((item, index) => (
+                            <li key={index}>
+                                <a 
+                                    href={item.link} 
+                                    data-item={item.dataItem}
+                                    onMouseEnter={() => setHoverText(item.dataItem)}
+                                    onMouseLeave={() => setHoverText('')}
+                                >
+                                    {item.name}
+                                </a>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+            </section>
+        </div>
     </div>
-    </div>
-  );
+);
 };
 
 export default NavBar2;
