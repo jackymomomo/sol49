@@ -1,5 +1,6 @@
 // KwhGraph.js
 import React, { useEffect, useRef } from 'react';
+import { totalForwardEnergy } from './dashboard';
 import * as echarts from 'echarts';
 
 const KwhGraph = ({ totalForwardEnergy }) => {
@@ -34,13 +35,10 @@ const KwhGraph = ({ totalForwardEnergy }) => {
         myChart.setOption(option);
       }
   
-      function getDayOfWeek(timestamp) {
-        const date = new Date(timestamp * 1000); // Convert UNIX timestamp to JavaScript Date object
-        return date.toLocaleDateString('en-US', { weekday: 'short' }); // 'short' gives you the abbreviated day of the week
-      }
-      
+   
+
       return () => myChart && myChart.dispose();
-    }, [totalForwardEnergy]); // Update chart when data changes
+    }, [totalForwardEnergy]);
   
     return <div ref={chartRef} style={{ width: '100%', height: '200px', justifyContent: "center" }} />;
   };
