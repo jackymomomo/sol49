@@ -7,6 +7,7 @@ import '../scss/energyStatistics.scss';
 import NavBar from './navbar';
 import NavBar2 from './computerNav';
 import SpeedometerGauge from './speedometer';
+import KwhGraph from './theGraph';
 
   function Dashboard() {
     const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -133,6 +134,8 @@ import SpeedometerGauge from './speedometer';
       }
     };
 
+    
+
     return (
       <div className='dashcontainer'>
         {screenWidth < 820 ? <NavBar/> : <NavBar2/>}
@@ -143,12 +146,14 @@ import SpeedometerGauge from './speedometer';
       <SpeedometerGauge currentWatts={parseFloat(kW)} maxWatts={maxWatts} />
       </div>
       <div className="measurement-box">
-        <span>kWh:</span>
+        <span>Your Energy Total!</span>
         <div className="graph-bar"><div className="graph-value"  style={{  width: `${kWhPercentage}%` }}></div></div>
-        <span>{totalForwardEnergy}</span>
-        <span>Battery Usage: {batteryPercentage}</span>
+        <span>used {totalForwardEnergy} from neighbours! </span>
       </div>
 </div>
+<div className="measurement-box">
+        <KwhGraph/>
+        </div>
         <div className="toggle-wrapper">
         <input
   className="toggle-checkbox"

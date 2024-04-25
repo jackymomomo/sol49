@@ -9,7 +9,7 @@ import UserProfile from './components/userprofile.js';
 import Settings from './components/settings.js';
 import NavBar2 from './components/computerNav.js';
 import { EnergyProvider } from './components/energyContext.js';
-import DeviceEnergyHistory from './components/test.js';
+import KWhGraph from './components/theGraph.js';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -45,7 +45,7 @@ function App() {
         <Route path="/friends" element={<ProtectedRoute><AddFriends /></ProtectedRoute>} />
         <Route path="/additional-info" element={<ProtectedRoute><AdditionalUserInfo /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/history" element={<ProtectedRoute><DeviceEnergyHistory/></ProtectedRoute>} />
+        <Route path="/history" element={<ProtectedRoute><KWhGraph/></ProtectedRoute>} />
         <Route path="/editprofile" element={<ProtectedRoute><UserProfile userId={currentUser?.uid} /></ProtectedRoute>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
