@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { db, storage } from '../firebase-config'; // Adjust the import path as needed. Ensure 'storage' is exported from your firebase-config.
+import { db, storage } from '../firebase-config';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // Import storage functions
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
+import { getTimeZones } from '@vvo/tzdb';
 import '../scss/editprofile.scss';
 import NavBar from './navbar';
 import NavBar2 from './computerNav';
@@ -14,18 +15,18 @@ const UserProfile = ({ userId }) => {
     const [address, setAddress] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [deviceID, setDeviceID] = useState('');
-    const [profileImage, setProfileImage] = useState(null); // State for the profile image file
-    const [profileImageUrl, setProfileImageUrl] = useState(''); // State to hold the temporary URL for preview
+    const [timeZone, setTimeZone] = useState(''); // Initialize with an empty string or a default value
+    const [profileImage, setProfileImage] = useState(null);
+    const [profileImageUrl, setProfileImageUrl] = useState('');
+    const timeZones = getTimeZones(); // Fetch time zone data from @vvo/tzdb
 
     const navigate = useNavigate();
 
     useEffect(() => {
         const handleResize = () => setScreenWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
-    
-        // Cleanup function to remove event listener
         return () => window.removeEventListener('resize', handleResize);
-      }, []);
+    }, []);
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -38,8 +39,7 @@ const UserProfile = ({ userId }) => {
                 setAddress(userData.address || '');
                 setPhoneNumber(userData.phoneNumber || '');
                 setDeviceID(userData.deviceID || '');
-                // Optionally, you can also fetch and set the image URL if it exists
-                // Set the profile image URL if it exists for displaying
+                setTimeZone(userData.timeZone || timeZones[0].name); // Default to the first time zone if not set
                 setProfileImageUrl(userData.profileImageUrl || '');
             } else {
                 console.log('No such document!');
@@ -51,34 +51,30 @@ const UserProfile = ({ userId }) => {
     const handleFileChange = (e) => {
         if (e.target.files[0]) {
             setProfileImage(e.target.files[0]);
-            // Generate a URL for the file to preview the image
             setProfileImageUrl(URL.createObjectURL(e.target.files[0]));
         }
     };
 
     const handleUpdate = async (e) => {
         e.preventDefault();
-        try {
-            let imageUrl = profileImageUrl; // Use existing image URL by default
-            if (profileImage) {
-                const imageRef = ref(storage, `profileImages/${userId}/${profileImage.name}`);
-                const snapshot = await uploadBytes(imageRef, profileImage);
-                imageUrl = await getDownloadURL(snapshot.ref); // Update with the new image URL
-            }
-            const userDocRef = doc(db, 'users', userId);
-            await updateDoc(userDocRef, {
-                name,
-                email,
-                address,
-                phoneNumber,
-                deviceID,
-                profileImageUrl: imageUrl, // Save the new image URL in Firestore
-            });
-            console.log('User profile updated successfully');
-            navigate('/dashboard');
-        } catch (error) {
-            console.error('Error updating user profile:', error.message);
+        let imageUrl = profileImageUrl;
+        if (profileImage) {
+            const imageRef = ref(storage, `profileImages/${userId}/${profileImage.name}`);
+            const snapshot = await uploadBytes(imageRef, profileImage);
+            imageUrl = await getDownloadURL(snapshot.ref);
         }
+        const userDocRef = doc(db, 'users', userId);
+        await updateDoc(userDocRef, {
+            name,
+            email,
+            address,
+            phoneNumber,
+            deviceID,
+            timeZone,
+            profileImageUrl: imageUrl,
+        });
+        console.log('User profile updated successfully');
+        navigate('/dashboard');
     };
 
     return (
@@ -114,6 +110,14 @@ const UserProfile = ({ userId }) => {
                 <div className="form-field">
                     <label htmlFor="profileImage" className="label-name"><span className="content-name">Profile Image</span></label>
                     <input type="file" id="profileImage" onChange={handleFileChange} />
+                </div>
+                <div className="form-field">
+                    <select id="timeZone" required value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
+                        {timeZones.map((tz) => (
+                            <option key={tz.name} value={tz.name}>{tz.name} (UTC{tz.rawOffsetInMinutes / 60})</option>
+                        ))}
+                    </select>
+                    <label htmlFor="timeZone" className="label-name"><span className="content-name"></span></label>
                 </div>
                 <button type="submit" className="form-submit-button">Update Profile</button>
             </form>
