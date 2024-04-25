@@ -83,59 +83,74 @@ app.get("/report-logs/:deviceId", async (req, res) => {
 // Export the app to Firebase Functions
 exports.api = functions.https.onRequest(app);
 
-
-exports.storeEnergyDataPeriodically = functions.pubsub.schedule("every 24 hours").onRun(async (context) => {
+exports.storeEnergyDataPeriodically = functions.pubsub.schedule("every minute").onRun(async (context) => {
   const usersSnapshot = await firestore.collection("users").get();
 
   for (const userDoc of usersSnapshot.docs) {
     const user = userDoc.data();
     const deviceId = user.deviceID;
-
     if (!deviceId) {
       console.log(`No device ID for user: ${userDoc.id}`);
-      continue; // Skip this iteration if there is no device ID
+      continue;
     }
 
-    // Fetch the energy data from the Tuya IoT API for each user's device ID
-    try {
-      // You might want to adjust this to fetch logs for the previous day, week, etc., depending on your requirements
-      const logsResponse = await tuya.request({
-        method: "GET",
-        path: `/v2.0/cloud/thing/${deviceId}/report-logs`,
-        query: {
-          codes: "total_forward_energy",
-          start_time: "0", // Assuming you want to start from the earliest record
-          end_time: Date.now().toString(), // Up to the current moment
-          size: "100", // This might need to be adjusted based on the expected number of logs per day
-        },
-      });
+    let lastRowKey = null;
+    let hasMore = true;
+    const energyData = [];
 
-      const energyLogs = logsResponse.result.logs;
+    while (hasMore) {
+      try {
+        const logsResponse = await tuya.request({
+          method: "GET",
+          path: `/v2.0/cloud/thing/${deviceId}/report-logs`,
+          query: {
+            codes: "total_forward_energy",
+            start_time: "0",
+            end_time: Date.now().toString(),
+            size: "100",
+            last_row_key: lastRowKey,
+          },
+        });
 
-      // Group logs by day
-      const dailyUsage = energyLogs.reduce((acc, log) => {
-        const day = new Date(log.event_time).toISOString().split("T")[0];
-        if (!acc[day]) {
-          acc[day] = [];
+        if (logsResponse.success && logsResponse.result && logsResponse.result.logs.length) {
+          energyData.push(...logsResponse.result.logs);
+          lastRowKey = logsResponse.result.last_row_key;
+          hasMore = !!lastRowKey;
+        } else {
+          hasMore = false;
         }
-        acc[day].push(parseInt(log.value, 10));
+      } catch (error) {
+        console.error(`Error fetching energy logs for device ${deviceId} of user ${userDoc.id}:`, error);
+        break;
+      }
+    }
+
+    // Process the fetched energy data to calculate daily totals
+    if (energyData.length) {
+      const dailyTotals = energyData.reduce((acc, log) => {
+        const day = new Date(parseInt(log.event_time)).toISOString().split("T")[0];
+        const value = parseInt(log.value, 10);
+
+        if (!acc[day]) {
+          acc[day] = {startValue: value, lastValue: value};
+        } else {
+          if (value < acc[day].startValue) acc[day].startValue = value;
+          if (value > acc[day].lastValue) acc[day].lastValue = value;
+        }
+
         return acc;
       }, {});
 
-      // Calculate the daily difference and store in Firestore
-      for (const [day, values] of Object.entries(dailyUsage)) {
-        if (values.length > 0) {
-          const dailyDifference = values[values.length + 1] - values[0]; // Difference between the last and first value of the day
-          const userEnergyDocRef = firestore.collection("user_energy").doc(userDoc.id).collection("daily_usage").doc(day);
-          await userEnergyDocRef.set({total_forward_energy: dailyDifference}, {merge: true});
-        }
+      for (const [day, {startValue, lastValue}] of Object.entries(dailyTotals)) {
+        const dailyTotal = lastValue - startValue;
+        const userEnergyDocRef = firestore.collection("user_energy").doc(userDoc.id).collection("daily_usage").doc(day);
+        // Set only updates the provided fields, hence not overwriting other data
+        await userEnergyDocRef.set({total_forward_energy: dailyTotal}, {merge: true});
       }
-      console.log(`Energy data processed and stored for user: ${userDoc.id}`);
-    } catch (error) {
-      console.error(`Error processing energy data for user: ${userDoc.id}`, error);
+    } else {
+      console.log(`No energy data found for device ${deviceId} of user ${userDoc.id}`);
     }
   }
 
   console.log("Energy data processing task completed.");
-  return null;
 });
