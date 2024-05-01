@@ -4,6 +4,7 @@ import { db, auth } from '../firebase-config';
 import '../scss/manageFriends.scss';
 
 function FriendRequests() {
+  
   const [friendRequests, setFriendRequests] = useState([]);
   const [friends, setFriends] = useState([]);
   const [activeTab, setActiveTab] = useState('requests'); // State to manage active tab

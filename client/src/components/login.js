@@ -93,7 +93,6 @@ function AuthForm() {
 
     return (
         <div className="auth-form">
-
         <div className={`container ${isRightPanelActive ? "right-panel-active" : ""}`} id="container">
             <div className="form-container sign-up-container">
                 <form onSubmit={handleSignUp}>
