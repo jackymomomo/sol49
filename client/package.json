@@ -14,7 +14,7 @@
     "crypto": "^1.0.1",
     "crypto-browserify": "^3.12.0",
     "echarts": "^5.5.0",
-    "firebase": "^10.8.0",
+    "firebase": "^10.11.1",
     "postman-collection": "^4.4.0",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",

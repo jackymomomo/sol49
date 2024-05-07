@@ -1,188 +1,122 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { auth, db } from '../firebase-config'; // Make sure you import your Firebase auth and db
-import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase-config';
+import { doc, getDoc, updateDoc, collection, query, where, addDoc, getDocs } from 'firebase/firestore';
 import '../scss/energyStatistics.scss';
 import NavBar from './navbar';
 import NavBar2 from './computerNav';
 import SpeedometerGauge from './speedometer';
 import KwhGraph from './theGraph';
+import ModeSelector from './buy@sell';
+import { useDevice } from '../context/deviceContext'
 
-  function Dashboard() {
-    const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-    const [amps, setAmps] = useState('0 A');
-    const [kW, setKW] = useState('0 kW');
-    const [volts, setVolts] = useState('0 V');
-    const [totalForwardEnergy, setTotalForwardEnergy] = useState('0 kWh');
-    const [batteryPercentage, setBatteryPercentage] = useState('0');
-    const [deviceStatus, setDeviceStatus] = useState({ switch: false });
-    const [deviceID, setDeviceID] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const totalCapacity = 14.3; // Total capacity of the battery in kWh
-    const nominalVoltage = 1503.6; // Nominal voltage in V
-    const maxChargeCurrent = 2000; // Max charge current in A
-    // Calculate the percentages
-    const kWhPercentage = (parseFloat(totalForwardEnergy) / totalCapacity) * 100;
-    const ampsPercentage = (parseFloat(amps) / maxChargeCurrent) * 100;
-    const voltsPercentage = (parseFloat(volts) / nominalVoltage) * 100;
-    // kW calculation depends on how you are determining kW in your application
-    const kWPercentage = (parseFloat(kW) / (nominalVoltage * maxChargeCurrent / 1000)) * 100;
-    const maxWatts = nominalVoltage * maxChargeCurrent / 1000;
+function Dashboard() {
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const { deviceStatus, updateDeviceID, fetchDeviceStatus, toggleDeviceSwitch } = useDevice();
+  const [sellerSettings, setSellerSettings] = useState([]);
+  const navigate = useNavigate();
 
-    const navigate = useNavigate();
+  useEffect(() => {
+      window.addEventListener('resize', () => setScreenWidth(window.innerWidth));
+      return () => window.removeEventListener('resize', () => setScreenWidth(window.innerWidth));
+  }, []);
 
-    useEffect(() => {
-      const handleResize = () => setScreenWidth(window.innerWidth);
-      window.addEventListener('resize', handleResize);
-  
-      // Cleanup function to remove event listener
-      return () => window.removeEventListener('resize', handleResize);
-    }, []);
-    useEffect(() => {
+  useEffect(() => {
       const fetchUserData = async () => {
-        const user = auth.currentUser;
-        if (user) {
-          const userDocRef = doc(db, 'users', user.uid);
-          const userDoc = await getDoc(userDocRef);
-          if (userDoc.exists()) {
-            // Set the device ID from the user's document
-            setDeviceID(userDoc.data().deviceID);
-          } else {
-            // Handle case where user document doesn't exist (e.g., redirect or show an error)
-            console.log('No user document found');
+          const user = auth.currentUser;
+          if (user) {
+              const userDocRef = doc(db, 'users', user.uid);
+              const userDoc = await getDoc(userDocRef);
+              if (userDoc.exists()) {
+                  updateDeviceID(userDoc.data().deviceID);
+              } else {
+                  console.log('No user document found');
+                  navigate('/');
+              }
           }
-        } else {
-          // Redirect or handle the case where there is no signed-in user
-          navigate('/'); // Example redirection
-        }
       };
-    
       fetchUserData();
-    }, []); // This effect is only for fetching user data on component mount.
-    
-    useEffect(() => {
-      // Only set up polling if deviceID is available
-      if (deviceID) {
-        const interval = setInterval(() => {
-          fetchDeviceStatus();
-        }, 5000);
-    
-        return () => clearInterval(interval);
-      }
-    }, [deviceID]); // This effect depends on deviceID, it will re-run when deviceID changes.
-    
-    function decodePhaseAData(encodedData) {
-      // Decode base64 to byte array
-      const rawData = atob(encodedData);
-      const data = new Uint8Array(rawData.length);
-      for (let i = 0; i < rawData.length; i++) {
+  }, [auth, db, navigate, updateDeviceID]);
+
+  useEffect(() => {
+      const interval = setInterval(fetchDeviceStatus, 2000);
+      return () => clearInterval(interval);
+  }, [fetchDeviceStatus]);
+
+  useEffect(() => {
+      const controlDevices = async () => {
+          const user = auth.currentUser;
+          if (!user) return;
+
+          const devicesRef = collection(db, 'users');
+          const q = query(devicesRef, where("mode", "==", "sell"));
+          const querySnapshot = await getDocs(q);
+          const sellersData = querySnapshot.docs.map(docSnapshot => ({
+              uid: docSnapshot.id,
+              name: docSnapshot.data().name,
+              email: docSnapshot.data().email,
+              settingsRef: doc(db, 'userSettings', docSnapshot.id)
+          }));
+
+          const sellersCompleteData = await Promise.all(sellersData.map(async (seller) => {
+              const settingsSnapshot = await getDoc(seller.settingsRef);
+              return {
+                  ...seller,
+                  pricePerKWh: settingsSnapshot.data().maxPrice,
+                  maxKWh: settingsSnapshot.data().maxKWh
+              };
+          }));
+          setSellerSettings(sellersCompleteData);
+      };
+
+      const intervalId = setInterval(controlDevices, 10000);
+      return () => clearInterval(intervalId);
+  }, [auth, db]);
+
+  function decodePhaseAData(encodedData) {
+    const rawData = atob(encodedData);
+    const data = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; i++) {
         data[i] = rawData.charCodeAt(i);
-      }
-      // Extract and convert data
-      const voltage = ((data[0] << 8) | data[1]) / 10; // Voltage in volts
-      const current = ((data[2] << 16) | (data[3] << 8) | data[4]) / 1000 ; // Current in amps
-      const power = ((data[5] << 16) | (data[6] << 8) | data[7]) / 1000 * 1000; // Power in kW
-      return { voltage, current, power };
     }
-    const fetchDeviceStatus = async () => {
-      setIsLoading(true);
-      try {
-        const response = await axios.get(`https://us-central1-watt-street.cloudfunctions.net/api/device-status/${deviceID}`);
-        const results = response.data.result;
-        const totalForwardEnergyObj = results.find(
-          (d) => d.code === 'total_forward_energy'
-        );
-        if (totalForwardEnergyObj) {
-          const energy = totalForwardEnergyObj.value;
-          const formattedEnergy = (energy / 100).toFixed(2); // Keep it as numeric for calculation
-          const batteryCapacityPercentage = ((parseFloat(formattedEnergy) / 14.3) * 100).toFixed(2);
-          setTotalForwardEnergy(`${formattedEnergy} kWh`); // Update totalForwardEnergy as usual
-          setBatteryPercentage(`${batteryCapacityPercentage}%`); // Update battery percentage
-        }
-       
-        const phaseAObj = results.find((d) => d.code === 'phase_a');
-        if (phaseAObj) {
-          const phaseAData = decodePhaseAData(phaseAObj.value);
-          setAmps(`${phaseAData.current} A`);
-          setKW(`${phaseAData.power} kW`);
-          setVolts(`${phaseAData.voltage} V`);
-        }
-        const switchObj = results.find((d) => d.code === 'switch');
-        if (switchObj) {
-          const switchState = switchObj.value;
-          setDeviceStatus({ ...deviceStatus, switch: switchState });
-        }
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Failed to fetch device status:', error);
-        setIsLoading(false);
-      }
-    };
-    const toggleDeviceSwitch = async (event) => {
-      setIsLoading(true);
-      try {
-        const currentSwitchState = deviceStatus?.switch;
-        await axios.post(`https://us-central1-watt-street.cloudfunctions.net/api/device-action/${deviceID}`, {
-          newState: !currentSwitchState,
-        });
-        setDeviceStatus({ ...deviceStatus, switch: !currentSwitchState });
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error toggling switch:', error);
-        setIsLoading(false);
-      }
-    };
+    const voltage = ((data[0] << 8) | data[1]) / 10; // Convert to volts
+    const current = ((data[2] << 16) | (data[3] << 8) | data[4]) / 1000; // Convert to amperes
+    const power = ((data[5] << 16) | (data[6] << 8) | data[7]); // Convert to watts without scaling factor?
+    return { voltage, current, power };
+}
 
-    
-
-    return (
+  return (
       <div className='dashcontainer'>
-        {screenWidth < 820 ? <NavBar/> : <NavBar2/>}
-      <div className='card'>
-      <h2>Energy Measurements</h2>
-      <div className="measurements-container">
-      <div className="measurement-box">
-      <SpeedometerGauge currentWatts={parseFloat(kW)} maxWatts={maxWatts} />
-      </div>
-      <div className="measurement-box">
-        <span>Your Energy Total!</span>
-        <div className="graph-bar"><div className="graph-value"  style={{  width: `${kWhPercentage}%` }}></div></div>
-        <span>used {totalForwardEnergy} from neighbours! </span>
-      </div>
+          {screenWidth < 820 ? <NavBar /> : <NavBar2 />}
+          <ModeSelector 
+              toggleMode={(newMode) => {
+                  const userRef = doc(db, 'users', auth.currentUser?.uid);
+                  updateDoc(userRef, { mode: newMode }).then(() => console.log("Mode updated successfully!"))
+                      .catch(error => console.error("Failed to update mode:", error));
+              }} 
+              deviceStatus={deviceStatus}
+              toggleDeviceSwitch={toggleDeviceSwitch}
+          />
+          <div className='card'>
+              <h2>Energy Measurements</h2>
+              <div className="measurements-container">
+              <div className="measurement-box">
+    <SpeedometerGauge currentWatts={parseFloat(deviceStatus.kW)} maxWatts={deviceStatus.nominalVoltage * deviceStatus.maxChargeCurrent / 1000} />
 </div>
-<div className="measurement-box">
-        <KwhGraph/>
-        </div>
-        <div className="toggle-wrapper">
-        <input
-  className="toggle-checkbox"
-  type="checkbox"
-  checked={deviceStatus?.switch}
-  onChange={toggleDeviceSwitch} // Use onChange instead of onClick
-/>
-          <div className="toggle-container">  
-            <div className="toggle-button">
-              <div className="toggle-button-circles-container">
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
-                <div className="toggle-button-circle"></div>
+
+                  <div className="measurement-box">
+                      <span>Your Energy Total!</span>
+                      <div className="graph-bar"><div className="graph-value" style={{ width: `${parseFloat(deviceStatus.totalForwardEnergy) / deviceStatus.totalCapacity * 100}%` }}></div></div>
+                      <span>used {deviceStatus.totalForwardEnergy} from neighbours!</span>
+                  </div>
               </div>
-            </div>
-            <span>{deviceStatus?.switch}</span>
-          </div>
-        </div>
+              <div className="measurement-box">
+                  <KwhGraph />
+              </div>
           </div>
       </div>
-    );
-  }
-export default Dashboard; 
+  );
+}
+
+export default Dashboard;
