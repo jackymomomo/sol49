@@ -1,88 +1,82 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase-config';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import { auth, db } from '../firebase-config'; // Simplified imports
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 import NavBar from './navbar';
-import '../scss/settings.scss';
 import NavBar2 from './computerNav';
+import '../scss/settings.scss';
 
 const Settings = () => {
     const [screenWidth, setScreenWidth] = useState(window.innerWidth);
-    const [minPrice, setMinPrice] = useState(0.0975); // Adjusted default to BC Hydro Step 1 energy charge
-    const [maxPrice, setMaxPrice] = useState(0.1408); // Adjusted default to BC Hydro Step 2 energy charge
-    const [maxKWh, setMaxKWh] = useState(1376); // Adjusted default to BC Hydro first step limit
-    const auth = getAuth();
-    const firestore = getFirestore();
+    const [maxPrice, setMaxPrice] = useState(0.1408);
+    const [maxKWh, setMaxKWh] = useState(1376);
     const navigate = useNavigate();
 
     useEffect(() => {
         const handleResize = () => setScreenWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
-    
-        // Cleanup function to remove event listener
         return () => window.removeEventListener('resize', handleResize);
-      }, []);
+    }, []);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, user => {
             if (user) {
                 const uid = user.uid;
-                const docRef = doc(firestore, "userSettings", uid);
+                const docRef = doc(db, "userSettings", uid);
                 getDoc(docRef).then((docSnap) => {
                     if (docSnap.exists()) {
-                        const userData = docSnap.data();
-                        setMinPrice(userData.minPrice);
-                        setMaxPrice(userData.maxPrice);
-                        setMaxKWh(userData.maxKWh);
+                        const { maxPrice, maxKWh } = docSnap.data();
+                        setMaxPrice(maxPrice);
+                        setMaxKWh(maxKWh);
                     }
                 });
+            } else {
+                navigate('/'); // Redirect to login if not authenticated
             }
         });
+        return unsubscribe;
+    }, []);
 
-        return () => unsubscribe();
-    }, [auth, firestore]);
+    const handleSliderChange = setter => e => setter(parseFloat(e.target.value));
 
-    const handleSliderChange = (setter) => (e) => setter(parseFloat(e.target.value));
-
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                const uid = user.uid;
-                const userSettingsRef = doc(firestore, "userSettings", uid);
-                setDoc(userSettingsRef, { minPrice, maxPrice, maxKWh }, { merge: true })
-                    .then(() => {
-                        console.log("Settings saved successfully");
-                        navigate('/dashboard');
-                    })
-                    .catch((error) => console.error("Error saving settings: ", error));
+        const user = auth.currentUser;
+        if (user) {
+            const uid = user.uid;
+            const userSettingsRef = doc(db, "userSettings", uid);
+            try {
+                await setDoc(userSettingsRef, { maxPrice, maxKWh }, { merge: true });
+                console.log("Settings saved successfully");
+                navigate('/dashboard');
+            } catch (error) {
+                console.error("Error saving settings: ", error);
             }
-        });
+        }
     };
 
     return (
         <div className="settings-container">
-             {screenWidth < 820 ? <NavBar/> : <NavBar2/>}
+            {screenWidth < 820 ? <NavBar/> : <NavBar2/>}
             <h1>Power Sharing Settings</h1>
             <form onSubmit={handleSubmit}>
-                <div className="slider-container">
+                {/* <div className="slider-container">
                     <label>
                         Minimum Price (per kWh): ${minPrice.toFixed(4)}
                         <input type="range" min="0" max="1.1408" value={minPrice} onChange={handleSliderChange(setMinPrice)} step="0.0001" />
                     </label>
-                </div>
+                </div> */}
                 <div className="slider-container">
                     <label>
-                        Maximum Price (per kWh): ${maxPrice.toFixed(4)}
-                        <input type="range" min="0.0975" max="1.1408" value={maxPrice} onChange={handleSliderChange(setMaxPrice)} step="0.0001" />
+                        Your Price (per kWh): ${maxPrice.toFixed(4)}
+                        <input type="range" min="0.0975" max="10.1408" value={maxPrice} onChange={handleSliderChange(setMaxPrice)} step="0.0001" />
                     </label>
                 </div>
                 <div className="slider-container">
                     <label>
                         Maximum kWh to Sell: {maxKWh} kWh
-                        <input type="range" min="0" max="50" value={maxKWh} onChange={handleSliderChange(setMaxKWh)} step="1" />
+                        <input type="range" min="0" max="2000" value={maxKWh} onChange={handleSliderChange(setMaxKWh)} step="1" />
                     </label>
                 </div>
                 <button type="submit">Save</button>
