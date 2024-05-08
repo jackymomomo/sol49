@@ -90,6 +90,20 @@ export const DeviceProvider = ({ children }) => {
         }
     }, [deviceID, deviceStatus]);
 
+    const toggleDeviceSwitch = async (deviceID, newState) => {
+        setIsLoading(true);
+        try {
+            const response = await axios.post(`https://us-central1-watt-street.cloudfunctions.net/api/device-action/${deviceID}`, { newState });
+            if (response.data.success) {
+                setDeviceStatus((prevStatus) => ({ ...prevStatus, switch: newState }));
+            }
+        } catch (error) {
+            console.error('Error toggling device switch:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <DeviceContext.Provider value={{
             deviceStatus,
@@ -97,7 +111,8 @@ export const DeviceProvider = ({ children }) => {
             deviceID,
             updateDeviceID,
             isLoading,
-            fetchDeviceStatus
+            fetchDeviceStatus,
+            toggleDeviceSwitch
         }}>
             {children}
         </DeviceContext.Provider>

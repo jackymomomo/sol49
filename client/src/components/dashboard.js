@@ -44,35 +44,6 @@ function Dashboard() {
       return () => clearInterval(interval);
   }, [fetchDeviceStatus]);
 
-  useEffect(() => {
-      const controlDevices = async () => {
-          const user = auth.currentUser;
-          if (!user) return;
-
-          const devicesRef = collection(db, 'users');
-          const q = query(devicesRef, where("mode", "==", "sell"));
-          const querySnapshot = await getDocs(q);
-          const sellersData = querySnapshot.docs.map(docSnapshot => ({
-              uid: docSnapshot.id,
-              name: docSnapshot.data().name,
-              email: docSnapshot.data().email,
-              settingsRef: doc(db, 'userSettings', docSnapshot.id)
-          }));
-
-          const sellersCompleteData = await Promise.all(sellersData.map(async (seller) => {
-              const settingsSnapshot = await getDoc(seller.settingsRef);
-              return {
-                  ...seller,
-                  pricePerKWh: settingsSnapshot.data().maxPrice,
-                  maxKWh: settingsSnapshot.data().maxKWh
-              };
-          }));
-          setSellerSettings(sellersCompleteData);
-      };
-
-      const intervalId = setInterval(controlDevices, 10000);
-      return () => clearInterval(intervalId);
-  }, [auth, db]);
 
   function decodePhaseAData(encodedData) {
     const rawData = atob(encodedData);
