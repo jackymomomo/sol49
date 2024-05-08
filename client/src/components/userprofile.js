@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, storage } from '../firebase-config';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import { getTimeZones } from '@vvo/tzdb';
@@ -15,10 +15,14 @@ const UserProfile = ({ userId }) => {
     const [address, setAddress] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [deviceID, setDeviceID] = useState('');
-    const [timeZone, setTimeZone] = useState(''); // Initialize with an empty string or a default value
+    const [timeZone, setTimeZone] = useState('');
     const [profileImage, setProfileImage] = useState(null);
     const [profileImageUrl, setProfileImageUrl] = useState('');
-    const timeZones = getTimeZones(); // Fetch time zone data from @vvo/tzdb
+    const [users, setUsers] = useState([]);
+    const [selectedNeighbours, setSelectedNeighbours] = useState([]);
+    const [canSellPower, setCanSellPower] = useState(false);
+    const [isPowerSeller, setIsPowerSeller] = useState(false);
+    const timeZones = getTimeZones();
 
     const navigate = useNavigate();
 
@@ -39,8 +43,11 @@ const UserProfile = ({ userId }) => {
                 setAddress(userData.address || '');
                 setPhoneNumber(userData.phoneNumber || '');
                 setDeviceID(userData.deviceID || '');
-                setTimeZone(userData.timeZone || timeZones[0].name); // Default to the first time zone if not set
+                setTimeZone(userData.timeZone || timeZones[0].name);
                 setProfileImageUrl(userData.profileImageUrl || '');
+                setSelectedNeighbours(userData.neighbours || []);
+                setCanSellPower(userData.canSellPower || false);
+                setIsPowerSeller(userData.isPowerSeller || false);
             } else {
                 console.log('No such document!');
             }
@@ -48,11 +55,29 @@ const UserProfile = ({ userId }) => {
         fetchUserData();
     }, [userId]);
 
+    useEffect(() => {
+        const fetchAllUsers = async () => {
+            const usersCollectionRef = collection(db, 'users');
+            const usersSnapshot = await getDocs(usersCollectionRef);
+            const usersData = usersSnapshot.docs.map((doc) => ({
+                uid: doc.id,
+                ...doc.data()
+            }));
+            setUsers(usersData);
+        };
+        fetchAllUsers();
+    }, []);
+
     const handleFileChange = (e) => {
         if (e.target.files[0]) {
             setProfileImage(e.target.files[0]);
             setProfileImageUrl(URL.createObjectURL(e.target.files[0]));
         }
+    };
+
+    const handleNeighbourSelection = (e) => {
+        const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+        setSelectedNeighbours(selectedOptions);
     };
 
     const handleUpdate = async (e) => {
@@ -72,6 +97,9 @@ const UserProfile = ({ userId }) => {
             deviceID,
             timeZone,
             profileImageUrl: imageUrl,
+            neighbours: selectedNeighbours,
+            canSellPower,
+            isPowerSeller
         });
         console.log('User profile updated successfully');
         navigate('/dashboard');
@@ -79,49 +107,64 @@ const UserProfile = ({ userId }) => {
 
     return (
         <div>
-        { screenWidth < 820 ? <NavBar/> : <NavBar2/>}
-        <div className="user-profile-container">
-            <h2>Edit Profile</h2>
-            {/* Display the profile image if available */}
-            {profileImageUrl && (
-                <img src={profileImageUrl} alt="Profile" className="profile-image-preview" />
-            )}
-            <form onSubmit={handleUpdate} className="user-profile-form">
-                <div className="form-field">
-                    <input type="text" id="name" required value={name} onChange={(e) => setName(e.target.value)} />
-                    <label htmlFor="name" className="label-name"><span className="content-name">Name</span></label>
-                </div>
-                <div className="form-field">
-                    <input type="email" id="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                    <label htmlFor="email" className="label-name"><span className="content-name">Email</span></label>
-                </div>
-                <div className="form-field">
-                    <input type="text" id="address" required value={address} onChange={(e) => setAddress(e.target.value)} />
-                    <label htmlFor="address" className="label-name"><span className="content-name">Address</span></label>
-                </div>
-                <div className="form-field">
-                    <input type="text" id="phoneNumber" required value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-                    <label htmlFor="phoneNumber" className="label-name"><span className="content-name">Phone Number</span></label>
-                </div>
-                <div className="form-field">
-                    <input type="text" id="deviceID" required value={deviceID} onChange={(e) => setDeviceID(e.target.value)} />
-                    <label htmlFor="deviceID" className="label-name"><span className="content-name">Device ID</span></label>
-                </div>
-                <div className="form-field">
-                    <label htmlFor="profileImage" className="label-name"><span className="content-name">Profile Image</span></label>
-                    <input type="file" id="profileImage" onChange={handleFileChange} />
-                </div>
-                <div className="form-field">
-                    <select id="timeZone" required value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
-                        {timeZones.map((tz) => (
-                            <option key={tz.name} value={tz.name}>{tz.name} (UTC{tz.rawOffsetInMinutes / 60})</option>
-                        ))}
-                    </select>
-                    <label htmlFor="timeZone" className="label-name"><span className="content-name"></span></label>
-                </div>
-                <button type="submit" className="form-submit-button">Update Profile</button>
-            </form>
-        </div>
+            {screenWidth < 820 ? <NavBar /> : <NavBar2 />}
+            <div className="user-profile-container">
+                <h2>Edit Profile</h2>
+                {profileImageUrl && (
+                    <img src={profileImageUrl} alt="Profile" className="profile-image-preview" />
+                )}
+                <form onSubmit={handleUpdate} className="user-profile-form">
+                    <div className="form-field">
+                        <input type="text" id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+                        <label htmlFor="name" className="label-name"><span className="content-name">Name</span></label>
+                    </div>
+                    <div className="form-field">
+                        <input type="email" id="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <label htmlFor="email" className="label-name"><span className="content-name">Email</span></label>
+                    </div>
+                    <div className="form-field">
+                        <input type="text" id="address" required value={address} onChange={(e) => setAddress(e.target.value)} />
+                        <label htmlFor="address" className="label-name"><span className="content-name">Address</span></label>
+                    </div>
+                    <div className="form-field">
+                        <input type of="text" id="phoneNumber" required value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                        <label htmlFor="phoneNumber" className="label-name"><span className="content-name">Phone Number</span></label>
+                    </div>
+                    <div className="form-field">
+                        <input type of="text" id="deviceID" required value={deviceID} onChange={(e) => setDeviceID(e.target.value)} />
+                        <label htmlFor="deviceID" className="label-name"><span className="content-name">Device ID</span></label>
+                    </div>
+                    <div className="form-field">
+                        <label htmlFor="profileImage" className="label-name"><span className="content-name">Profile Image</span></label>
+                        <input type="file" id="profileImage" onChange={handleFileChange} />
+                    </div>
+                    <div className="form-field">
+                        <select id="timeZone" required value={timeZone} onChange={(e) => setTimeZone(e.target.value)}>
+                            {timeZones.map((tz) => (
+                                <option key={tz.name} value={tz.name}>{tz.name} (UTC{tz.rawOffsetInMinutes / 60})</option>
+                            ))}
+                        </select>
+                        <label htmlFor="timeZone" className="label-name"><span className="content-name"></span></label>
+                    </div>
+                    <div className="form-field">
+                        <select id="neighbours" multiple size="5" required value={selectedNeighbours} onChange={handleNeighbourSelection} className="multi-select">
+                            {users.map((user) => (
+                                <option key={user.uid} value={user.uid}>{user.name}</option>
+                            ))}
+                        </select>
+                        <label htmlFor="neighbours" className="label-name"><span className="content-name">Neighbours</span></label>
+                    </div>
+                    <div className="form-field">
+                        <label htmlFor="canSellPower" className="label-name"><span className="content-name">Can Sell Power</span></label>
+                        <input type="checkbox" id="canSellPower" checked={canSellPower} onChange={(e) => setCanSellPower(e.target.checked)} />
+                    </div>
+                    <div className="form-field">
+                        <label htmlFor="isPowerSeller" className="label-name"><span className="content-name">Is Power Seller</span></label>
+                        <input type="checkbox" id="isPowerSeller" checked={isPowerSeller} onChange={(e) => setIsPowerSeller(e.target.checked)} />
+                    </div>
+                    <button type="submit" className="form-submit-button">Update Profile</button>
+                </form>
+            </div>
         </div>
     );
 };

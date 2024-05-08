@@ -15,26 +15,33 @@ function AuthForm() {
     const [address, setAddress] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [deviceID, setDeviceID] = useState(''); // State hook for device_id
+    const [canSell, setCanSell] = useState(false);
+    const [canBuy, setCanBuy] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
+    
 
     const navigate = useNavigate();
 
     const handleSignUp = async (e) => {
         e.preventDefault();
+        if (!canSell || !canBuy) {
+            alert("Please confirm both 'Can you sell power?' and 'Can you buy power?' before signing up.");
+            return;
+        }
         try {
+            await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence); // Set persistence based on the checkbox
-            console.log('Account created successfully');
-            // Now include device_id in the Firestore document
             await setDoc(doc(db, 'users', userCredential.user.uid), {
                 name,
                 email,
                 address,
                 phoneNumber,
-                deviceID, // Include device_id here
+                deviceID,
+                canSell,
+                canBuy
             });
             console.log('User profile created in Firestore');
-            navigate('/dashboard'); // Navigate to the dashboard after account creation and profile setup
+            navigate('/dashboard');
         } catch (error) {
             console.error('Error creating account:', error.message);
         }
@@ -74,6 +81,7 @@ function AuthForm() {
                     address: null,
                     phoneNumber: null,
                     deviceID: null,
+
                 });
                 // Since this is a new user, redirect to the additional information page
                 navigate('/additional-info', { state: { userId: result.user.uid } });
@@ -118,15 +126,24 @@ function AuthForm() {
                                 ></path>
                             </svg>
                             {/* Sign in with Google */}
-                        </button>                    </div>
-                    <input className='createinput' type="text" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-                    <input className='createinput' type="text" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} />
-                    <input className='createinput' type="text" placeholder="Phone Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
-                    <input className='createinput' type="text" placeholder="Device ID" value={deviceID} onChange={(e) => setDeviceID(e.target.value)} /> {/* Input for device_id */}
-                    <input className='createinput' type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    <input className='createinput' type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                    <button>Sign Up</button>
-                </form>
+                            </button>
+                        </div>
+                        <input className='createinput' type="text" placeholder="Name" value={name} onChange={e => setName(e.target.value)} />
+                        <input className='createinput' type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+                        <input className='createinput' type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+                        <input className='createinput' type="text" placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} />
+                        <input className='createinput' type="text" placeholder="Phone Number" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} />
+                        <input className='createinput' type="text" placeholder="Device ID" value={deviceID} onChange={e => setDeviceID(e.target.value)} />
+                        <div>
+                            <input type="checkbox" checked={canSell} onChange={e => setCanSell(e.target.checked)} />
+                            <label>Can you sell power?</label>
+                        </div>
+                        <div>
+                            <input type="checkbox" checked={canBuy} onChange={e => setCanBuy(e.target.checked)} />
+                            <label>Can you buy power?</label>
+                        </div>
+                        <button>Sign Up</button>
+                    </form>
             </div>
             <div className="form-container sign-in-container">
                 <form onSubmit={handleSignIn}>

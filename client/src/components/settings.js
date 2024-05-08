@@ -10,7 +10,7 @@ import '../scss/settings.scss';
 const Settings = () => {
     const [screenWidth, setScreenWidth] = useState(window.innerWidth);
     const [maxPrice, setMaxPrice] = useState(0.1408);
-    const [maxKWh, setMaxKWh] = useState(1376);
+    const [maxKWh, setMaxKWh] = useState(50.11);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -76,7 +76,7 @@ const Settings = () => {
                 <div className="slider-container">
                     <label>
                         Maximum kWh to Sell: {maxKWh} kWh
-                        <input type="range" min="0" max="2000" value={maxKWh} onChange={handleSliderChange(setMaxKWh)} step="1" />
+                        <input type="range" min="0" max="50.11" value={maxKWh} onChange={handleSliderChange(setMaxKWh)} step="1" />
                     </label>
                 </div>
                 <button type="submit">Save</button>
