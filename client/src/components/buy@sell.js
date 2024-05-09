@@ -64,7 +64,7 @@ function ModeSelector({ toggleMode }) {
             setSellerSettings(sellersData);
         };
     
-        const intervalId = setInterval(controlDevices, 10000);
+        const intervalId = setInterval(controlDevices, 900);
         return () => clearInterval(intervalId);
     }, [personalDeviceID, personalSwitchState, neighbours]);
 
@@ -77,24 +77,56 @@ function ModeSelector({ toggleMode }) {
         }));
     };
 
-    const toggleDeviceSwitch = async () => {
-        const newState = !personalSwitchState;
-        console.log(`Sending command to ${newState ? 'turn on' : 'turn off'} personal device ID:`, personalDeviceID);
+    const toggleDeviceSwitch = async (deviceId, newState, performSecurityCheck = false) => {
+        console.log(`Sending command to ${newState ? 'turn on' : 'turn off'} device ID:`, deviceId);
         try {
-            const response = await axios.post(`https://us-central1-watt-street.cloudfunctions.net/api/device-action/${personalDeviceID}`, {
+            const response = await axios.post(`https://us-central1-watt-street.cloudfunctions.net/api/device-action/${deviceId}`, {
                 newState: newState,
             });
             console.log("Toggle response:", response.data);
-            setPersonalSwitchState(newState);
+
+            if (performSecurityCheck) {
+                // Perform security checks here, if necessary
+                console.log("Performing security checks and toggling seller's device.");
+                // Optionally, find the seller's ID and turn off their device.
+                const seller = sellerSettings.find(seller => seller.deviceID !== deviceId);
+                if (seller) {
+                    await toggleDeviceSwitch(seller.deviceID, false);  // Turn off the seller's device
+                }
+            }
         } catch (error) {
             console.error('Error toggling switch:', error);
         }
     };
 
+    useEffect(() => {
+        if (deviceStatus === 'off' && toggleMode === 'sell') {
+            toggleDeviceSwitch(personalDeviceID, false);
+            neighbours.forEach(async neighbourId => {
+                const neighbourRef = doc(db, 'users', neighbourId);
+                const neighbourSnapshot = await getDoc(neighbourRef);
+                if (neighbourSnapshot.exists() && neighbourSnapshot.data().deviceID) {
+                    await toggleDeviceSwitch(neighbourSnapshot.data().deviceID, false);
+                }
+            });
+        }
+    }, [deviceStatus, neighbours, personalDeviceID, toggleMode]);
+
+    const handleToggleMode = async (mode) => {
+        toggleMode(mode); // This function should update the mode in your global state/context
+
+        if (mode === 'sell' && personalDeviceID) {
+            console.log("Switching to sell mode, turning off personal device.");
+            await toggleDeviceSwitch(personalDeviceID, false);
+            setPersonalSwitchState(false); // Ensure local state is updated to reflect the switch state
+        }
+    };
+
     return (
         <div className="mode-selector">
-            <button onClick={() => toggleMode('buy')}>Buy Power</button>
-            {canSell && <button onClick={() => toggleMode('sell')}>Sell Power</button>}
+            <button onClick={() => handleToggleMode('buy')}>Buy Power</button>
+            {canSell && <button onClick={() => handleToggleMode('sell')}>Sell Power</button>}
+            <button onClick={() => setDeviceStatus('off')}>Turn Off</button>
             {sellerSettings.length > 0 ? sellerSettings.map((seller, index) => (
                 <div key={index} style={{ margin: '10px', padding: '10px', border: '1px solid #ccc' }}>
                     <h3>{seller.name} ({seller.email})</h3>
@@ -105,7 +137,7 @@ function ModeSelector({ toggleMode }) {
                             <li key={idx}>{data.date}: {data.usage} kWh</li>
                         ))}
                     </ul>
-                    <button onClick={toggleDeviceSwitch}>
+                    <button onClick={() => toggleDeviceSwitch(personalDeviceID, !personalSwitchState, true)}>
                         {personalSwitchState ? 'Turn Off' : 'Turn On'}
                     </button>
                 </div>
