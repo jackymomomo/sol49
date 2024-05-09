@@ -9,9 +9,11 @@ function ModeSelector({ toggleMode }) {
     const [personalSwitchState, setPersonalSwitchState] = useState(false);
     const [personalDeviceID, setPersonalDeviceID] = useState(null);
     const [sellerSettings, setSellerSettings] = useState([]);
+    const [canSell, setCanSell] = useState(true);
+    const [neighbours, setNeighbours] = useState([]);
 
     useEffect(() => {
-        const fetchPersonalDevice = async () => {
+        const fetchPersonalDeviceAndNeighbors = async () => {
             const user = auth.currentUser;
             if (!user) return;
 
@@ -19,6 +21,9 @@ function ModeSelector({ toggleMode }) {
             const userSnapshot = await getDoc(userRef);
             if (userSnapshot.exists()) {
                 setPersonalDeviceID(userSnapshot.data().deviceID);
+                const userData = userSnapshot.data();
+                setCanSell(userData.canSell !== false && userData.canSellPower !== false);
+                setNeighbours(userData.neighbours || []);
             }
         };
 
@@ -32,26 +37,16 @@ function ModeSelector({ toggleMode }) {
             let sellersData = [];
     
             for (const docSnapshot of querySnapshot.docs) {
-                if (docSnapshot.id !== user.uid) {
+                if (neighbours.includes(docSnapshot.id) && docSnapshot.id !== user.uid) {
                     const seller = {
                         uid: docSnapshot.id,
                         name: docSnapshot.data().name,
                         email: docSnapshot.data().email,
                         settingsRef: doc(db, 'userSettings', docSnapshot.id),
                         deviceID: docSnapshot.data().deviceID,
-                        energyData: [],
+                        energyData: await fetchEnergyData(docSnapshot.id),
                         switchState: docSnapshot.data().deviceID === personalDeviceID ? personalSwitchState : false,
                     };
-
-                    // Fetch historical energy usage data
-                    const energyRef = collection(db, `user_energy/${seller.uid}/daily_usage`);
-                    const energyDocs = await getDocs(energyRef);
-                    energyDocs.forEach(doc => {
-                        seller.energyData.push({
-                            date: doc.id,
-                            usage: doc.data().total_forward_energy
-                        });
-                    });
 
                     // Fetch seller settings
                     const settingsSnapshot = await getDoc(seller.settingsRef);
@@ -65,13 +60,22 @@ function ModeSelector({ toggleMode }) {
                 }
             }
     
-            fetchPersonalDevice();
+            fetchPersonalDeviceAndNeighbors();
             setSellerSettings(sellersData);
         };
     
         const intervalId = setInterval(controlDevices, 10000);
         return () => clearInterval(intervalId);
-    }, []);
+    }, [personalDeviceID, personalSwitchState, neighbours]);
+
+    const fetchEnergyData = async (userId) => {
+        const energyRef = collection(db, `user_energy/${userId}/daily_usage`);
+        const energySnapshot = await getDocs(energyRef);
+        return energySnapshot.docs.map(doc => ({
+            date: doc.id,
+            usage: doc.data().total_forward_energy
+        }));
+    };
 
     const toggleDeviceSwitch = async () => {
         const newState = !personalSwitchState;
@@ -87,25 +91,11 @@ function ModeSelector({ toggleMode }) {
         }
     };
 
-    const disablePersonalPower = async () => {
-        console.log("Disabling personal power for device ID:", personalDeviceID);
-        try {
-            const response = await axios.post(`https://us-central1-watt-street.cloudfunctions.net/api/device-action/${personalDeviceID}`, {
-                newState: false,
-            });
-            console.log("Disable response:", response.data);
-            setDeviceStatus({ ...deviceStatus, switch: false });
-        } catch (error) {
-            console.error('Error disabling personal power:', error);
-        }
-    };
-
     return (
         <div className="mode-selector">
             <button onClick={() => toggleMode('buy')}>Buy Power</button>
-            <button onClick={() => toggleMode('sell')}>Sell Power</button>
-            <button onClick={disablePersonalPower}>Disable Personal Power</button>
-            {sellerSettings.map((seller, index) => (
+            {canSell && <button onClick={() => toggleMode('sell')}>Sell Power</button>}
+            {sellerSettings.length > 0 ? sellerSettings.map((seller, index) => (
                 <div key={index} style={{ margin: '10px', padding: '10px', border: '1px solid #ccc' }}>
                     <h3>{seller.name} ({seller.email})</h3>
                     <div>Max Price: ${seller.maxPrice ? seller.maxPrice.toFixed(4) : 'N/A'} per kWh</div>
@@ -119,7 +109,7 @@ function ModeSelector({ toggleMode }) {
                         {personalSwitchState ? 'Turn Off' : 'Turn On'}
                     </button>
                 </div>
-            ))}
+            )) : <p>No sellers available.</p>}
         </div>
     );
 }
