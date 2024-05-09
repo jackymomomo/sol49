@@ -33,8 +33,11 @@ const KWhGraph = () => {
           const data = [];
 
           querySnapshot.forEach(doc => {
-            labels.push(formatDate(new Date(doc.id)));
-            data.push(doc.data().total_forward_energy / 100 + 0.01); // Convert Wh to kWh
+            const energyValue = doc.data().total_forward_energy / 100 + 0.01; // Convert Wh to kWh
+            if (energyValue !== 0.01) {
+              labels.push(formatDate(new Date(doc.id)));
+              data.push(energyValue);
+            }
           });
 
           setChartData({ labels, datasets: [{ ...chartData.datasets[0], data }] });
@@ -49,17 +52,21 @@ const KWhGraph = () => {
 
   return (
     <div className="chart-container">
-      <h1>Daily Energy Usage Chart</h1>
-      <Bar data={chartData} options={{
-        responsive: true,
-        scales: {
-          y: { beginAtZero: true, title: { display: true, text: 'kWh' } }
-        },
-        plugins: {
-          legend: { display: true, position: 'top' },
-          tooltip: { enabled: true, mode: 'index', intersect: false }
-        },
-      }} />
+      {chartData.labels.length > 0 && (
+        <>
+          <h1>Daily Energy Usage Chart</h1>
+          <Bar data={chartData} options={{
+            responsive: true,
+            scales: {
+              y: { beginAtZero: true, title: { display: true, text: 'kWh' } }
+            },
+            plugins: {
+              legend: { display: true, position: 'top' },
+              tooltip: { enabled: true, mode: 'index', intersect: false }
+            },
+          }} />
+        </>
+      )}
     </div>
   );
 };

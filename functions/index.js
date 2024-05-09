@@ -8,6 +8,8 @@ const dayjs = require("dayjs");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
 dayjs.extend(weekOfYear);
 
+const corsHandler = cors({origin: true});
+
 
 admin.initializeApp();
 const firestore = admin.firestore();
@@ -154,3 +156,22 @@ exports.storeEnergyDataPeriodically = functions.pubsub.schedule("every minute").
 
   console.log("Energy data processing task completed.");
 });
+
+exports.proxyBatteryStatus = functions.https.onRequest((request, response) => {
+  corsHandler(request, response, async () => {
+    try {
+      const result = await axios.get("https://moondance.savaryliving.com/api/states/sensor.victron_battery_soc", {
+        headers: {
+          "Authorization": `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI0MWYyZDAyNGI3OTg0MmYxYWRmMjliM2Y3N2Q4ODE0MCIsImlhdCI6MTcxNTI0NDkwNSwiZXhwIjoyMDMwNjA0OTA1fQ.7rPPRAjxnzEr397Nu2QvsLF_h5MP4t2X0x3-w0jK5ko`,
+          "Content-Type": "application/json",
+        },
+      });
+      response.send(result.data);
+    } catch (error) {
+      console.error("Failed to fetch from Home Assistant:", error);
+      response.status(500).send("Server Error");
+    }
+  });
+});
+
+
