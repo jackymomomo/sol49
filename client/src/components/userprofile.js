@@ -147,19 +147,19 @@ const UserProfile = ({ userId }) => {
                         <label htmlFor="timeZone" className="label-name"><span className="content-name"></span></label>
                     </div>
                     <div className="form-field">
-                        <select id="neighbours" multiple size="5" required value={selectedNeighbours} onChange={handleNeighbourSelection} className="multi-select">
-                            {users.map((user) => (
-                                <option key={user.uid} value={user.uid}>{user.name}</option>
-                            ))}
-                        </select>
-                        <label htmlFor="neighbours" className="label-name"><span className="content-name">Neighbours</span></label>
-                    </div>
+    <select id="neighbours" multiple size="5" required value={selectedNeighbours} onChange={handleNeighbourSelection} className="multi-select">
+        {users.filter(user => user.uid !== userId).map((user) => (  // Filter out the current user by ID
+            <option key={user.uid} value={user.uid}>{user.name}</option>
+        ))}
+    </select>
+    <label htmlFor="neighbours" className="label-name"><span className="content-name"></span></label>
+</div>
                     <div className="form-field">
                         <label htmlFor="canSellPower" className="label-name"><span className="content-name">Can Sell Power</span></label>
                         <input type="checkbox" id="canSellPower" checked={canSellPower} onChange={(e) => setCanSellPower(e.target.checked)} />
                     </div>
                     <div className="form-field">
-                        <label htmlFor="isPowerSeller" className="label-name"><span className="content-name">Is Power Seller</span></label>
+                        <label htmlFor="isPowerSeller" className="label-name"><span className="content-name">Can Buy power</span></label>
                         <input type="checkbox" id="isPowerSeller" checked={isPowerSeller} onChange={(e) => setIsPowerSeller(e.target.checked)} />
                     </div>
                     <button type="submit" className="form-submit-button">Update Profile</button>
