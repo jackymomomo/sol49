@@ -8,7 +8,7 @@ export default function NavBar() {
   const handleMenuToggle = () => setMenuOpen(!menuOpen); // Toggles the state
 
   return (
-    <div>
+    <div className='navBarRoot'>
       <input
         className="menu-icon"
         type="checkbox"
@@ -22,7 +22,7 @@ export default function NavBar() {
         <ul className="pt-5">
           <li><Link to="/dashboard">Home</Link></li>
           <li><Link to="/friends">Friends</Link></li>
-          <li><Link to="/history">History</Link></li>
+          {/* <li><Link to="/history">History</Link></li> */}
           <li><Link to="/settings">Settings</Link></li>
           <li><Link to="/editprofile">profile</Link></li>
         </ul>

@@ -3,6 +3,7 @@ import { auth, db } from '../firebase-config';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import axios from 'axios';
 import { useDevice } from '../context/deviceContext';
+import '../scss/buy&sel.scss';
 
 function ModeSelector({ toggleMode }) {
     const { deviceStatus, setDeviceStatus } = useDevice();
@@ -11,6 +12,7 @@ function ModeSelector({ toggleMode }) {
     const [sellerSettings, setSellerSettings] = useState([]);
     const [canSell, setCanSell] = useState(true);
     const [neighbours, setNeighbours] = useState([]);
+    const [currentMode, setCurrentMode] = useState('off'); // This will keep track of the current mode
 
     useEffect(() => {
         const fetchPersonalDeviceAndNeighbors = async () => {
@@ -21,21 +23,22 @@ function ModeSelector({ toggleMode }) {
             const userSnapshot = await getDoc(userRef);
             if (userSnapshot.exists()) {
                 setPersonalDeviceID(userSnapshot.data().deviceID);
-                const userData = userSnapshot.data();
-                setCanSell(userData.canSell !== false && userData.canSellPower !== false);
-                setNeighbours(userData.neighbours || []);
+                setCanSell(userSnapshot.data().canSell !== false && userSnapshot.data().canSellPower !== false);
+                setNeighbours(userSnapshot.data().neighbours || []);
             }
         };
 
         const controlDevices = async () => {
+            if (currentMode !== 'buy') return; // Only fetch seller data if in 'buy' mode.
+
             const user = auth.currentUser;
             if (!user) return;
-    
-            const devicesRef = collection(db, 'users'); 
+
+            const devicesRef = collection(db, 'users');
             const q = query(devicesRef, where("mode", "==", "sell"));
             const querySnapshot = await getDocs(q);
             let sellersData = [];
-    
+
             for (const docSnapshot of querySnapshot.docs) {
                 if (neighbours.includes(docSnapshot.id) && docSnapshot.id !== user.uid) {
                     const seller = {
@@ -48,7 +51,6 @@ function ModeSelector({ toggleMode }) {
                         switchState: docSnapshot.data().deviceID === personalDeviceID ? personalSwitchState : false,
                     };
 
-                    // Fetch seller settings
                     const settingsSnapshot = await getDoc(seller.settingsRef);
                     if (settingsSnapshot.exists()) {
                         const { maxPrice, maxKWh } = settingsSnapshot.data();
@@ -59,14 +61,14 @@ function ModeSelector({ toggleMode }) {
                     sellersData.push(seller);
                 }
             }
-    
-            fetchPersonalDeviceAndNeighbors();
+
             setSellerSettings(sellersData);
         };
-    
+
+        fetchPersonalDeviceAndNeighbors();
         const intervalId = setInterval(controlDevices, 900);
         return () => clearInterval(intervalId);
-    }, [personalDeviceID, personalSwitchState, neighbours]);
+    }, [personalDeviceID, personalSwitchState, neighbours, currentMode]);
 
     const fetchEnergyData = async (userId) => {
         const energyRef = collection(db, `user_energy/${userId}/daily_usage`);
@@ -114,6 +116,7 @@ function ModeSelector({ toggleMode }) {
 
     const handleToggleMode = async (mode) => {
         toggleMode(mode); // This function should update the mode in your global state/context
+        setCurrentMode(mode); // Update the current mode
 
         if (mode === 'sell' && personalDeviceID) {
             console.log("Switching to sell mode, turning off personal device.");
@@ -124,25 +127,38 @@ function ModeSelector({ toggleMode }) {
 
     return (
         <div className="mode-selector">
-            <button onClick={() => handleToggleMode('buy')}>Buy Power</button>
-            {canSell && <button onClick={() => handleToggleMode('sell')}>Sell Power</button>}
-            <button onClick={() => setDeviceStatus('off')}>Turn Off</button>
-            {sellerSettings.length > 0 ? sellerSettings.map((seller, index) => (
-                <div key={index} style={{ margin: '10px', padding: '10px', border: '1px solid #ccc' }}>
-                    <h3>{seller.name} ({seller.email})</h3>
-                    <div>Max Price: ${seller.maxPrice ? seller.maxPrice.toFixed(4) : 'N/A'} per kWh</div>
-                    <div>Max kWh: {seller.maxKWh ? seller.maxKWh : 'N/A'} kWh</div>
-                    <ul>
-                        {seller.energyData.map((data, idx) => (
-                            <li key={idx}>{data.date}: {data.usage} kWh</li>
-                        ))}
-                    </ul>
-                    <button onClick={() => toggleDeviceSwitch(personalDeviceID, !personalSwitchState, true)}>
-                        {personalSwitchState ? 'Turn Off' : 'Turn On'}
-                    </button>
-                </div>
-            )) : <p>No sellers available.</p>}
+        <div className="mode-switches">
+            <button className={`switch-button buy ${currentMode === 'buy' ? 'active' : ''}`} onClick={() => handleToggleMode('buy')}>
+                Buy Power
+            </button>
+            {canSell && (
+                <button className={`switch-button sell ${currentMode === 'sell' ? 'active' : ''}`} onClick={() => handleToggleMode('sell')}>
+                    Sell Power
+                </button>
+            )}
+            <button className={`switch-button off ${currentMode === 'off' ? 'active' : ''}`} onClick={() => handleToggleMode('off')}>
+                Turn Off
+            </button>
         </div>
+        {currentMode === 'buy' && sellerSettings.length > 0 ? (
+            <div className="sellers-list">
+                {sellerSettings.map((seller, index) => (
+                    <div className="seller-info" key={index}>
+                        <h3>{seller.name} ({seller.email})</h3>
+                        <ul>
+                            {seller.energyData.map((data, idx) => (
+                                <li key={idx}>{data.date}: {data.usage} kWh</li>
+                            ))}
+                        </ul>
+                    </div>
+                    
+                ))}
+                <button className="toggle-device" onClick={() => toggleDeviceSwitch(personalDeviceID, !personalSwitchState, true)}>
+                                {personalSwitchState ? 'Turn Off' : 'Turn On'}
+                            </button>
+            </div>
+        ) : currentMode === 'buy' ? <p className="no-sellers">No sellers available.</p> : null}
+    </div>
     );
 }
 

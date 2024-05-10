@@ -63,15 +63,6 @@ function Dashboard() {
     return (
         <div className='dashcontainer'>
             {screenWidth < 820 ? <NavBar /> : <NavBar2 />}
-            <ModeSelector 
-                toggleMode={(newMode) => {
-                    const userRef = doc(db, 'users', auth.currentUser?.uid);
-                    updateDoc(userRef, { mode: newMode }).then(() => console.log("Mode updated successfully!"))
-                        .catch(error => console.error("Failed to update mode:", error));
-                }} 
-                deviceStatus={deviceStatus}
-                toggleDeviceSwitch={toggleDeviceSwitch}
-            />
             <div className='card'>
                 <h2>Home Assistant Battery Percentage</h2>
                 <p>{homeAssistantBattery}</p>
@@ -80,14 +71,25 @@ function Dashboard() {
                         <SpeedometerGauge currentWatts={parseFloat(deviceStatus.kW)} maxWatts={deviceStatus.nominalVoltage * deviceStatus.maxChargeCurrent / 1000} />
                     </div>
                     <div className="measurement-box">
+                   
                         <span>Your Energy Total!</span>
                         <div className="graph-bar"><div className="graph-value" style={{ width: `${parseFloat(deviceStatus.totalForwardEnergy) / deviceStatus.totalCapacity * 100}%` }}></div></div>
                         <span>used {deviceStatus.totalForwardEnergy} from neighbours!</span>
                     </div>
-                    <div className="measurement-box">
+                    
+                </div>
+                <div className="measurement-box">
                   <KWhGraph />
               </div>
-                </div>
+              <ModeSelector 
+                toggleMode={(newMode) => {
+                    const userRef = doc(db, 'users', auth.currentUser?.uid);
+                    updateDoc(userRef, { mode: newMode }).then(() => console.log("Mode updated successfully!"))
+                        .catch(error => console.error("Failed to update mode:", error));
+                }} 
+                deviceStatus={deviceStatus}
+                toggleDeviceSwitch={toggleDeviceSwitch}
+            />
             </div>
         </div>
     );
