@@ -1,0 +1,36 @@
+// navbar.scss
+.profile-navbar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+}
+
+.profile-navbar-image {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+}
+
+.profile-placeholder {
+    width: 65px;
+    height: 65px;
+    background-color: #ccc;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+// dashboard.scss
+.dashboard-header {
+    position: relative;
+    height: 60px;
+    background-color: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}

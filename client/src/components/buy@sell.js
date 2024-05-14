@@ -12,25 +12,69 @@ function ModeSelector({ toggleMode }) {
     const [sellerSettings, setSellerSettings] = useState([]);
     const [canSell, setCanSell] = useState(true);
     const [neighbours, setNeighbours] = useState([]);
-    const [currentMode, setCurrentMode] = useState('off'); // This will keep track of the current mode
+    const [currentMode, setCurrentMode] = useState('');
+    const [neighbourModes, setNeighbourModes] = useState({}); // Tracks the mode of each neighbour
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                const userRef = doc(db, 'users', user.uid);
+                getDoc(userRef).then((userSnapshot) => {
+                    if (userSnapshot.exists()) {
+                        const userData = userSnapshot.data();
+                        setPersonalDeviceID(userData.deviceID || null);
+                        setCanSell(userData.canSell !== false && userData.canSellPower !== false);
+                        setNeighbours(userData.neighbours || []);
+                    }
+                }).catch((error) => {
+                    console.error("Failed to fetch user data:", error);
+                });
+            }
+        });
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (!neighbours.length) return;
+
+        const fetchNeighboursData = async () => {
+            let neighbourData = {};
+            for (const neighbourId of neighbours) {
+                const neighbourRef = doc(db, 'users', neighbourId);
+                const docSnap = await getDoc(neighbourRef);
+                if (docSnap.exists()) {
+                    neighbourData[neighbourId] = docSnap.data().mode;
+                }
+            }
+            setNeighbourModes(neighbourData);
+        };
+
+        fetchNeighboursData();
+    }, [neighbours]);
+
+    useEffect(() => {
+        // Control personal breaker based on neighbours' modes and own mode
+        const activeSellers = Object.values(neighbourModes).filter(mode => mode === 'sell').length;
+        const shouldTurnOn = currentMode !== 'off' && activeSellers > 0 && !Object.values(neighbourModes).some(mode => mode === 'buy' && activeSellers > 1);
+
+        toggleDeviceSwitch(personalDeviceID, shouldTurnOn);
+    }, [neighbourModes, currentMode]);
+
 
     useEffect(() => {
         const fetchPersonalDeviceAndNeighbors = async () => {
             const user = auth.currentUser;
             if (!user) return;
-
             const userRef = doc(db, 'users', user.uid);
             const userSnapshot = await getDoc(userRef);
             if (userSnapshot.exists()) {
                 setPersonalDeviceID(userSnapshot.data().deviceID);
-                setCanSell(userSnapshot.data().canSell !== false && userSnapshot.data().canSellPower !== false);
-                setNeighbours(userSnapshot.data().neighbours || []);
+                const userData = userSnapshot.data();
+                setCanSell(userData.canSell !== false && userData.canSellPower !== false);
+                setNeighbours(userData.neighbours || []);
             }
         };
-
         const controlDevices = async () => {
-            if (currentMode !== 'buy') return; // Only fetch seller data if in 'buy' mode.
-
             const user = auth.currentUser;
             if (!user) return;
 
@@ -50,25 +94,24 @@ function ModeSelector({ toggleMode }) {
                         energyData: await fetchEnergyData(docSnapshot.id),
                         switchState: docSnapshot.data().deviceID === personalDeviceID ? personalSwitchState : false,
                     };
-
+                    // Fetch seller settings
                     const settingsSnapshot = await getDoc(seller.settingsRef);
                     if (settingsSnapshot.exists()) {
                         const { maxPrice, maxKWh } = settingsSnapshot.data();
                         seller.maxPrice = maxPrice;
                         seller.maxKWh = maxKWh;
                     }
-
                     sellersData.push(seller);
                 }
             }
 
+            fetchPersonalDeviceAndNeighbors();
             setSellerSettings(sellersData);
         };
 
-        fetchPersonalDeviceAndNeighbors();
         const intervalId = setInterval(controlDevices, 900);
         return () => clearInterval(intervalId);
-    }, [personalDeviceID, personalSwitchState, neighbours, currentMode]);
+    }, [personalDeviceID, personalSwitchState, neighbours]);
 
     const fetchEnergyData = async (userId) => {
         const energyRef = collection(db, `user_energy/${userId}/daily_usage`);
@@ -78,6 +121,22 @@ function ModeSelector({ toggleMode }) {
             usage: doc.data().total_forward_energy
         }));
     };
+
+    useEffect(() => {
+        if (deviceStatus === 'off') {
+            toggleMode('off'); // Turn off the mode globally
+            setCurrentMode('off'); // Update local state
+            toggleDeviceSwitch(personalDeviceID, false); // Turn off personal device
+
+            neighbours.forEach(async neighbourId => {
+                const neighbourRef = doc(db, 'users', neighbourId);
+                const neighbourSnapshot = await getDoc(neighbourRef);
+                if (neighbourSnapshot.exists() && neighbourSnapshot.data().deviceID && neighbourSnapshot.data().canSell) {
+                    await toggleDeviceSwitch(neighbourSnapshot.data().deviceID, false);
+                }
+            });
+        }
+    }, [deviceStatus, neighbours, personalDeviceID, toggleMode]);
 
     const toggleDeviceSwitch = async (deviceId, newState, performSecurityCheck = false) => {
         console.log(`Sending command to ${newState ? 'turn on' : 'turn off'} device ID:`, deviceId);
@@ -100,6 +159,7 @@ function ModeSelector({ toggleMode }) {
             console.error('Error toggling switch:', error);
         }
     };
+
 
     useEffect(() => {
         if (deviceStatus === 'off' && toggleMode === 'sell') {
@@ -127,38 +187,49 @@ function ModeSelector({ toggleMode }) {
 
     return (
         <div className="mode-selector">
-        <div className="mode-switches">
-            <button className={`switch-button buy ${currentMode === 'buy' ? 'active' : ''}`} onClick={() => handleToggleMode('buy')}>
-                Buy Power
-            </button>
-            {canSell && (
-                <button className={`switch-button sell ${currentMode === 'sell' ? 'active' : ''}`} onClick={() => handleToggleMode('sell')}>
-                    Sell Power
+            <div className="mode-switches">
+                <button
+                    className={`switch-button buy ${currentMode === 'buy' ? 'active' : ''}`}
+                    onClick={() => {
+                        const newSwitchState = !personalSwitchState; // Toggle the current state
+                        console.log(`Buy button pressed. Current state: ${personalSwitchState}, New state: ${newSwitchState}`);
+                        setPersonalSwitchState(newSwitchState); // Update local switch state
+                        handleToggleMode(newSwitchState ? 'buy' : 'off'); // Update mode based on new state
+                    }}>
+                    {personalSwitchState ? 'stop buy' : 'Buy!'}
                 </button>
-            )}
-            <button className={`switch-button off ${currentMode === 'off' ? 'active' : ''}`} onClick={() => handleToggleMode('off')}>
-                Turn Off
-            </button>
-        </div>
-        {currentMode === 'buy' && sellerSettings.length > 0 ? (
+
+                {canSell && (
+                    <button
+                        className={`switch-button sell ${currentMode === 'sell' ? 'active' : ''}`}
+                        onClick={() => handleToggleMode('sell')}
+                    >
+                        Sell Power
+                    </button>
+                )}
+                <button
+                    className={`switch-button off ${currentMode === 'off' ? 'active' : ''}`}
+                    onClick={() => {
+                        setDeviceStatus('off');
+                        handleToggleMode('off');
+                    }}
+                >
+                 Off
+                </button>
+            </div>
             <div className="sellers-list">
-                {sellerSettings.map((seller, index) => (
+                {sellerSettings.length > 0 ? sellerSettings.map((seller, index) => (
                     <div className="seller-info" key={index}>
                         <h3>{seller.name} ({seller.email})</h3>
                         <ul>
-                            {seller.energyData.map((data, idx) => (
+                            {seller.energyData && Array.isArray(seller.energyData) ? seller.energyData.map((data, idx) => (
                                 <li key={idx}>{data.date}: {data.usage} kWh</li>
-                            ))}
+                            )) : <li>No energy data available.</li>}
                         </ul>
                     </div>
-                    
-                ))}
-                <button className="toggle-device" onClick={() => toggleDeviceSwitch(personalDeviceID, !personalSwitchState, true)}>
-                                {personalSwitchState ? 'Turn Off' : 'Turn On'}
-                            </button>
+                )) : <p className="no-sellers">No sellers available.</p>}
             </div>
-        ) : currentMode === 'buy' ? <p className="no-sellers">No sellers available.</p> : null}
-    </div>
+        </div>
     );
 }
 

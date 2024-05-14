@@ -7,6 +7,7 @@ import { getTimeZones } from '@vvo/tzdb';
 import '../scss/editprofile.scss';
 import NavBar from './navbar';
 import NavBar2 from './computerNav';
+import ProfileNavBar from './profilenavbar';
 
 const UserProfile = ({ userId }) => {
     const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -107,7 +108,7 @@ const UserProfile = ({ userId }) => {
 
     return (
         <div>
-            {screenWidth < 820 ? <NavBar /> : <NavBar2 />}
+             {screenWidth < 820 ? <ProfileNavBar userId={userId} /> : <NavBar2 />}
             <div className="user-profile-container">
                 <h2>Edit Profile</h2>
                 {profileImageUrl && (
