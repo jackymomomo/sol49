@@ -34,7 +34,7 @@ const KWhGraph = () => {
 
           querySnapshot.forEach(doc => {
             const energyValue = doc.data().total_forward_energy / 100 + 0.01; // Convert Wh to kWh
-            if (energyValue !== 0.01) {
+            if (energyValue !== 0.0) {
               labels.push(formatDate(new Date(doc.id)));
               data.push(energyValue);
             }
