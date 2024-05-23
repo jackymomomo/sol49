@@ -54,14 +54,14 @@ const KWhGraph = () => {
     <div className="chart-container">
       {chartData.labels.length > 0 && (
         <>
-          <h1>Daily Energy Usage Chart</h1>
+          <h1>Historical Purchases</h1>
           <Bar data={chartData} options={{
             responsive: true,
             scales: {
               y: { beginAtZero: true, title: { display: true, text: 'kWh' } }
             },
             plugins: {
-              legend: { display: true, position: 'top' },
+              legend: { display: false }, // Remove the legend
               tooltip: { enabled: true, mode: 'index', intersect: false }
             },
           }} />

@@ -17,6 +17,7 @@ function Dashboard() {
     const navigate = useNavigate();
     const [homeAssistantBattery, setHomeAssistantBattery] = useState('');
     const [userId, setUserId] = useState('');
+    const [mode, setMode] = useState('off'); // State to store the mode
 
     useEffect(() => {
         const handleResize = () => setScreenWidth(window.innerWidth);
@@ -32,7 +33,9 @@ function Dashboard() {
                 const userDocRef = doc(db, 'users', user.uid);
                 const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists()) {
-                    updateDeviceID(userDoc.data().deviceID);
+                    const userData = userDoc.data();
+                    updateDeviceID(userData.deviceID);
+                    setMode(userData.mode || 'off'); // Set the mode from Firestore
                 } else {
                     console.log('No user document found');
                     navigate('/');
@@ -69,17 +72,20 @@ function Dashboard() {
                 <ModeSelector 
                     toggleMode={(newMode) => {
                         const userRef = doc(db, 'users', auth.currentUser?.uid);
-                        updateDoc(userRef, { mode: newMode }).then(() => console.log("Mode updated successfully!"))
+                        updateDoc(userRef, { mode: newMode }).then(() => {
+                            console.log("Mode updated successfully!");
+                            setMode(newMode); // Update local mode state
+                        })
                             .catch(error => console.error("Failed to update mode:", error));
                     }} 
                     deviceStatus={deviceStatus}
                     toggleDeviceSwitch={toggleDeviceSwitch}
                 />
-                <h2>Home Assistant Battery Percentage</h2>
-                <p>{homeAssistantBattery}</p>
+                {/* <h2>Home Assistant Battery Percentage</h2>
+                <p>{homeAssistantBattery}</p> */}
                 <div className='measurements-container'>
                     <div className="measurement-box">
-                        <SpeedometerGauge currentWatts={parseFloat(deviceStatus.kW)} maxWatts={deviceStatus.nominalVoltage * deviceStatus.maxChargeCurrent / 1000} />
+                        <SpeedometerGauge currentWatts={parseFloat(deviceStatus.kW)} maxWatts={deviceStatus.nominalVoltage * deviceStatus.maxChargeCurrent / 1000} mode={mode} /> {/* Pass mode as a prop */}
                     </div>
                     <div className="measurement-box">
                         <span>Your Energy Total!</span>
