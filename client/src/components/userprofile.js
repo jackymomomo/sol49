@@ -8,6 +8,7 @@ import '../scss/editprofile.scss';
 import NavBar from './navbar';
 import NavBar2 from './computerNav';
 import ProfileNavBar from './profilenavbar';
+import Settings from './settings';
 
 const UserProfile = ({ userId }) => {
     const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -136,7 +137,7 @@ const UserProfile = ({ userId }) => {
                         <label htmlFor="deviceID" className="label-name"><span className="content-name">Device ID</span></label>
                     </div>
                     <div className="form-field">
-                        <label htmlFor="profileImage" className="label-name"><span className="content-name">Profile Image</span></label>
+                        <label htmlFor="profileImage" className="label-name"><span className="content-name"></span></label>
                         <input type="file" id="profileImage" onChange={handleFileChange} />
                     </div>
                     <div className="form-field">
@@ -166,6 +167,7 @@ const UserProfile = ({ userId }) => {
                     <button type="submit" className="form-submit-button">Update Profile</button>
                 </form>
             </div>
+            <Settings/>
         </div>
     );
 };

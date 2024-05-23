@@ -58,7 +58,7 @@ const Settings = () => {
 
     return (
         <div className="settings-container">
-            {screenWidth < 820 ? <NavBar/> : <NavBar2/>}
+            {/* {screenWidth < 820 ? <NavBar/> : <NavBar2/>} */}
             <h1>Power Sharing Settings</h1>
             <form onSubmit={handleSubmit}>
                 {/* <div className="slider-container">
