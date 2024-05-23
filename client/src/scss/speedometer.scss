@@ -64,7 +64,6 @@
   top: 0;
   left: calc(100% + 5px);
   width: 100%;
-//   height: 200%;
   background: linear-gradient(rgba(0,0,0,0.075), transparent);
   transform: skewX(45deg);
 }
@@ -97,6 +96,7 @@
 }
 
 .gaugebox .content .percent {
+  --color: #555; // Default color
   position: relative;
   width: 150px;
   height: 150px;
@@ -112,7 +112,7 @@
   justify-content: center;
   align-items: center;
   color: #fff;
-  font-size: 1.75rem;
+  font-size: 1.25rem; // Adjusted font size
   letter-spacing: 0.1rem;
   text-transform: uppercase;
 }
@@ -134,7 +134,7 @@
 }
 
 .gaugebox .content .percent svg circle:nth-child(2) {
-  stroke: #555;
+  stroke: var(--color);
   stroke-dasharray: 440;
   stroke-dashoffset: calc(440 - (440 * var(--num)) / 100);
   opacity: 0;
@@ -154,7 +154,7 @@
 .gaugebox .content .percent .dot {
   position: absolute;
   inset: 5px;
-  z-index: 10;
+  z-index: -1;
   animation: animateDot 2s linear forwards;
 }
 
@@ -175,7 +175,7 @@
   transform: translateX(-50%);
   width: 14px;
   height: 14px;
-  background: #555;
+  background: var(--color);
   border-radius: 50%;
 }
 
@@ -202,4 +202,4 @@
         width: 270px;
         height: 250px;
     }
-  }
+}
