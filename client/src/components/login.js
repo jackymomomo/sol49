@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { auth, googleProvider } from '../firebase-config';
 import { createUserWithEmailAndPassword, signInWithPopup, signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../firebase-config'; // Adjust the import path as needed
+import { db } from '../firebase-config';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-// import '../styles/AuthForm.css';
-import '../scss/authform.scss'
+import '../scss/authform.scss';
 
 function AuthForm() {
     const [isRightPanelActive, setIsRightPanelActive] = useState(false);
@@ -14,13 +13,22 @@ function AuthForm() {
     const [name, setName] = useState('');
     const [address, setAddress] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
-    const [deviceID, setDeviceID] = useState(''); // State hook for device_id
+    const [deviceID, setDeviceID] = useState('');
     const [canSell, setCanSell] = useState(false);
     const [canBuy, setCanBuy] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
-    
 
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const storedEmail = localStorage.getItem('rememberedEmail');
+        const storedPassword = localStorage.getItem('rememberedPassword');
+        if (storedEmail && storedPassword) {
+            setEmail(storedEmail);
+            setPassword(storedPassword);
+            setRememberMe(true);
+        }
+    }, []);
 
     const handleSignUp = async (e) => {
         e.preventDefault();
@@ -47,18 +55,15 @@ function AuthForm() {
         }
     };
 
-
     const handleSignIn = async (e) => {
         e.preventDefault();
         try {
-            await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence); // Set persistence based on the checkbox
+            await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
             await signInWithEmailAndPassword(auth, email, password);
             console.log('Signed in with email successfully');
-            // Handle successful sign-in
-            navigate('/dashboard'); // Navigate to the dashboard
+            navigate('/dashboard');
         } catch (error) {
             console.error('Error signing in:', error.message);
-            // Handle sign-in errors
         }
     };
 
@@ -67,29 +72,21 @@ function AuthForm() {
             const result = await signInWithPopup(auth, googleProvider);
             console.log('Signed in with Google successfully');
 
-            // Define the user's document reference in Firestore
             const userDocRef = doc(db, 'users', result.user.uid);
-
-            // Attempt to fetch the user's document
             const userDoc = await getDoc(userDocRef);
 
             if (!userDoc.exists()) {
                 await setDoc(userDocRef, {
                     email: result.user.email,
-                    name: result.user.displayName, // Assuming you want to use the display name from Google
-                    // Initialize other fields as needed, e.g., with null or default values
+                    name: result.user.displayName,
                     address: null,
                     phoneNumber: null,
                     deviceID: null,
-
                 });
-                // Since this is a new user, redirect to the additional information page
                 navigate('/additional-info', { state: { userId: result.user.uid } });
             } else if (!userDoc.data().address || !userDoc.data().phoneNumber || !userDoc.data().deviceID) {
-                // If the document exists but lacks certain information, redirect to the additional information page
                 navigate('/additional-info', { state: { userId: result.user.uid } });
             } else {
-                // If the document exists and all required information is present, navigate to the dashboard directly
                 navigate('/dashboard');
             }
         } catch (error) {
@@ -97,7 +94,15 @@ function AuthForm() {
         }
     };
 
-
+    const handleRememberMe = () => {
+        if (rememberMe) {
+            localStorage.setItem('rememberedEmail', email);
+            localStorage.setItem('rememberedPassword', password);
+        } else {
+            localStorage.removeItem('rememberedEmail');
+            localStorage.removeItem('rememberedPassword');
+        }
+    };
 
     return (
         <div className="auth-form">
@@ -174,15 +179,16 @@ function AuthForm() {
                     <input className='logininput' type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
                     <a href="#">Forgot your password?</a>
                     <div className="custom-checkbox-container">
-                        <input
-                            type="checkbox"
-                            id="rememberMe"
-                            checked={rememberMe}
-                            onChange={(e) => setRememberMe(e.target.checked)}
-                        />
-                        <label htmlFor="rememberMe">Remember Me</label>
-                    </div>
-
+                            <input
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={(e) => {
+                                    setRememberMe(e.target.checked);
+                                    handleRememberMe();
+                                }}
+                            />
+                            <label>Remember Me</label>
+                        </div>
                     <button>Sign In</button>
                 </form>
             </div>
@@ -203,6 +209,8 @@ function AuthForm() {
         </div >
         </div>
     );
-}
+    }
+    
+    export default AuthForm;
 
-export default AuthForm;
+

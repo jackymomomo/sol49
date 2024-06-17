@@ -13,7 +13,7 @@ function ModeSelector({ toggleMode }) {
     const [canSell, setCanSell] = useState(true);
     const [neighbours, setNeighbours] = useState([]);
     const [currentMode, setCurrentMode] = useState('');
-    const [neighbourModes, setNeighbourModes] = useState({}); // Tracks the mode of each neighbour
+    const [neighbourModes, setNeighbourModes] = useState({});
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -25,6 +25,7 @@ function ModeSelector({ toggleMode }) {
                         setPersonalDeviceID(userData.deviceID || null);
                         setCanSell(userData.canSell !== false && userData.canSellPower !== false);
                         setNeighbours(userData.neighbours || []);
+                        setCurrentMode(userData.mode || 'off');
                     }
                 }).catch((error) => {
                     console.error("Failed to fetch user data:", error);
@@ -53,13 +54,11 @@ function ModeSelector({ toggleMode }) {
     }, [neighbours]);
 
     useEffect(() => {
-        // Control personal breaker based on neighbours' modes and own mode
         const activeSellers = Object.values(neighbourModes).filter(mode => mode === 'sell').length;
         const shouldTurnOn = currentMode !== 'off' && activeSellers > 0 && !Object.values(neighbourModes).some(mode => mode === 'buy' && activeSellers > 1);
 
         toggleDeviceSwitch(personalDeviceID, shouldTurnOn);
     }, [neighbourModes, currentMode]);
-
 
     useEffect(() => {
         const fetchPersonalDeviceAndNeighbors = async () => {
@@ -94,7 +93,6 @@ function ModeSelector({ toggleMode }) {
                         energyData: await fetchEnergyData(docSnapshot.id),
                         switchState: docSnapshot.data().deviceID === personalDeviceID ? personalSwitchState : false,
                     };
-                    // Fetch seller settings
                     const settingsSnapshot = await getDoc(seller.settingsRef);
                     if (settingsSnapshot.exists()) {
                         const { maxPrice, maxKWh } = settingsSnapshot.data();
@@ -147,32 +145,16 @@ function ModeSelector({ toggleMode }) {
             console.log("Toggle response:", response.data);
 
             if (performSecurityCheck) {
-                // Perform security checks here, if necessary
                 console.log("Performing security checks and toggling seller's device.");
-                // Optionally, find the seller's ID and turn off their device.
                 const seller = sellerSettings.find(seller => seller.deviceID !== deviceId);
                 if (seller) {
-                    await toggleDeviceSwitch(seller.deviceID, false);  // Turn off the seller's device
+                    await toggleDeviceSwitch(seller.deviceID, false); 
                 }
             }
         } catch (error) {
             console.error('Error toggling switch:', error);
         }
     };
-
-
-    useEffect(() => {
-        if (deviceStatus === 'off' && toggleMode === 'sell') {
-            toggleDeviceSwitch(personalDeviceID, false);
-            neighbours.forEach(async neighbourId => {
-                const neighbourRef = doc(db, 'users', neighbourId);
-                const neighbourSnapshot = await getDoc(neighbourRef);
-                if (neighbourSnapshot.exists() && neighbourSnapshot.data().deviceID) {
-                    await toggleDeviceSwitch(neighbourSnapshot.data().deviceID, false);
-                }
-            });
-        }
-    }, [deviceStatus, neighbours, personalDeviceID, toggleMode]);
 
     const handleToggleMode = async (mode) => {
         toggleMode(mode); // This function should update the mode in your global state/context
@@ -190,13 +172,9 @@ function ModeSelector({ toggleMode }) {
             <div className="mode-switches">
                 <button
                     className={`switch-button buy ${currentMode === 'buy' ? 'active' : ''}`}
-                    onClick={() => {
-                        const newSwitchState = !personalSwitchState; // Toggle the current state
-                        console.log(`Buy button pressed. Current state: ${personalSwitchState}, New state: ${newSwitchState}`);
-                        setPersonalSwitchState(newSwitchState); // Update local switch state
-                        handleToggleMode(newSwitchState ? 'buy' : 'off'); // Update mode based on new state
-                    }}>
-                    {personalSwitchState ? 'stop buy' : 'Buy!'}
+                    onClick={() => handleToggleMode('buy')}
+                >
+                    Buy
                 </button>
 
                 {canSell && (
@@ -214,7 +192,7 @@ function ModeSelector({ toggleMode }) {
                         handleToggleMode('off');
                     }}
                 >
-                 Off
+                    Off
                 </button>
             </div>
             <div className="sellers-list">
