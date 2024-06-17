@@ -14,6 +14,7 @@ function ModeSelector({ toggleMode }) {
     const [neighbours, setNeighbours] = useState([]);
     const [currentMode, setCurrentMode] = useState('');
     const [neighbourModes, setNeighbourModes] = useState({});
+    const [pollCount, setPollCount] = useState(0); // Polling counter
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -54,10 +55,13 @@ function ModeSelector({ toggleMode }) {
     }, [neighbours]);
 
     useEffect(() => {
+        if (pollCount >= 25) return; // Stop polling after 25 attempts
+
         const activeSellers = Object.values(neighbourModes).filter(mode => mode === 'sell').length;
         const shouldTurnOn = currentMode !== 'off' && activeSellers > 0 && !Object.values(neighbourModes).some(mode => mode === 'buy' && activeSellers > 1);
 
         toggleDeviceSwitch(personalDeviceID, shouldTurnOn);
+        setPollCount(prevCount => prevCount + 1); // Increment poll count
     }, [neighbourModes, currentMode]);
 
     useEffect(() => {
@@ -107,7 +111,7 @@ function ModeSelector({ toggleMode }) {
             setSellerSettings(sellersData);
         };
 
-        const intervalId = setInterval(controlDevices, 900);
+        const intervalId = setInterval(controlDevices, 1500);
         return () => clearInterval(intervalId);
     }, [personalDeviceID, personalSwitchState, neighbours]);
 
