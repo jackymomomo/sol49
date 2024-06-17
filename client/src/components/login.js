@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { auth, googleProvider } from '../firebase-config';
-import { createUserWithEmailAndPassword, signInWithPopup, signInWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
+  onAuthStateChanged,
+  signOut
+} from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase-config';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import '../scss/authform.scss';
 
 function AuthForm() {
-    const [isRightPanelActive, setIsRightPanelActive] = useState(false);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
@@ -16,19 +24,31 @@ function AuthForm() {
     const [deviceID, setDeviceID] = useState('');
     const [canSell, setCanSell] = useState(false);
     const [canBuy, setCanBuy] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true); // Default to true for persistent login
+    const [isRightPanelActive, setIsRightPanelActive] = useState(false);
 
     const navigate = useNavigate();
 
     useEffect(() => {
+        const applyPersistence = async () => {
+            await setPersistence(auth, browserLocalPersistence);
+        };
+
+        applyPersistence();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                navigate('/dashboard');
+            }
+        });
+
         const storedEmail = localStorage.getItem('rememberedEmail');
         const storedPassword = localStorage.getItem('rememberedPassword');
         if (storedEmail && storedPassword) {
             setEmail(storedEmail);
             setPassword(storedPassword);
-            setRememberMe(true);
         }
-    }, []);
+    }, [navigate]);
 
     const handleSignUp = async (e) => {
         e.preventDefault();
@@ -37,7 +57,6 @@ function AuthForm() {
             return;
         }
         try {
-            await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             await setDoc(doc(db, 'users', userCredential.user.uid), {
                 name,
@@ -94,13 +113,23 @@ function AuthForm() {
         }
     };
 
-    const handleRememberMe = () => {
-        if (rememberMe) {
+    const handleRememberMe = (e) => {
+        setRememberMe(e.target.checked);
+        if (e.target.checked) {
             localStorage.setItem('rememberedEmail', email);
             localStorage.setItem('rememberedPassword', password);
         } else {
             localStorage.removeItem('rememberedEmail');
             localStorage.removeItem('rememberedPassword');
+        }
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await signOut(auth);
+            navigate('/login'); // or wherever you want to direct the user post-logout
+        } catch (error) {
+            console.error('Error signing out:', error.message);
         }
     };
 
