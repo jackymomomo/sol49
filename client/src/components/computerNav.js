@@ -1,15 +1,14 @@
 import '../scss/computerNav.scss';
-import logo from '../assets/sol49logo.png'; // Path to your logo file
 import ProfileNavBar from './profilenavbar';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { db } from '../firebase-config';
 import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import '../scss/profilenav.scss'; // Ensure styles are properly referenced
 
 const NavBar2 = ({ userId }) => {
-    const [profileImageUrl, setProfileImageUrl] = useState('');
-    const navigate = useNavigate();
+    const [profileImageUrl, setProfileImageUrl] = React.useState('');
+const [hoverText, setHoverText] = React.useState('');
 
     useEffect(() => {
         const fetchProfileImage = async () => {
@@ -24,11 +23,6 @@ const NavBar2 = ({ userId }) => {
         };
         fetchProfileImage();
     }, [userId]);
-
-    const handleLogoClick = () => {
-        navigate('/dashboard');
-    };
-
 
     // Items for the navigation bar
     const menuItems = [
