@@ -7,12 +7,12 @@ const cors = require("cors");
 const dayjs = require("dayjs");
 const weekOfYear = require("dayjs/plugin/weekOfYear");
 dayjs.extend(weekOfYear);
-
 const corsHandler = cors({origin: true});
 
 
 admin.initializeApp();
 const firestore = admin.firestore();
+
 // Express app setup
 const app = express();
 const tuya = new TuyaContext({
@@ -175,3 +175,56 @@ exports.proxyBatteryStatus = functions.https.onRequest((request, response) => {
 });
 
 
+exports.storeOwedAmountPeriodically = functions.pubsub.schedule("every 5 minutes").onRun(async (context) => {
+  const usersSnapshot = await firestore.collection("users").get();
+  const currentDate = new Date().toISOString().split("T")[0];
+
+  for (const userDoc of usersSnapshot.docs) {
+    const userData = userDoc.data();
+    const neighbours = userData.neighbours || [];
+    const userId = userDoc.id;
+
+    let totalOwed = 0;
+    let energyValueKWh = 0;
+
+    for (const neighbourId of neighbours) {
+      const energyQuery = firestore.collection(`user_energy/${neighbourId}/daily_usage`).where("date", "==", currentDate);
+      const energySnapshot = await energyQuery.get();
+
+      for (const docSnapshot of energySnapshot.docs) {
+        const energyValueWh = docSnapshot.data().total_forward_energy;
+        energyValueKWh += energyValueWh / 1000; // Convert Wh to kWh
+
+        const neighbourRef = firestore.collection("users").doc(neighbourId);
+        const neighbourSnapshot = await neighbourRef.get();
+        const neighbourData = neighbourSnapshot.data();
+
+        if (neighbourData.canSellPower && neighbourData.neighbours.includes(userId)) {
+          const settingsRef = firestore.collection("userSettings").doc(neighbourId);
+          const settingsSnapshot = await settingsRef.get();
+          if (settingsSnapshot.exists) {
+            const {maxPrice} = settingsSnapshot.data();
+            const owed = energyValueKWh * maxPrice;
+            totalOwed += owed;
+          }
+        }
+      }
+    }
+
+    if (totalOwed > 0) {
+      const dailyOwedRef = firestore.collection(`user_owed/${userId}/daily_owed`).doc(currentDate);
+      const dailyOwedDoc = await dailyOwedRef.get();
+
+      if (dailyOwedDoc.exists) {
+        // Update the existing document
+        const previousTotalOwed = dailyOwedDoc.data().totalOwed || 0;
+        await dailyOwedRef.update({totalOwed: previousTotalOwed + totalOwed});
+      } else {
+        // Create a new document for the current date
+        await dailyOwedRef.set({date: currentDate, totalOwed});
+      }
+
+      console.log(`Total owed for ${currentDate}: $${totalOwed}`);
+    }
+  }
+});
