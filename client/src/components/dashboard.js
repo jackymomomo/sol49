@@ -10,6 +10,7 @@ import SpeedometerGauge from './speedometer';
 import ModeSelector from './buy@sell';
 import { useDevice } from '../context/deviceContext';
 import KWhGraph from './theGraph';
+import EarningsGraph from './earningsGraph';
 
 function Dashboard() {
     const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -67,7 +68,8 @@ function Dashboard() {
 
     return (
         <div className='dashcontainer'>
-            {screenWidth < 820 ? <ProfileNavBar userId={userId} /> : <NavBar2 />}
+            {/* {screenWidth < 820 ? <ProfileNavBar userId={userId} /> : <NavBar2 />} */}
+            <ProfileNavBar userId={userId} />
             <div className='card'>
                 <ModeSelector 
                     toggleMode={(newMode) => {
@@ -95,6 +97,7 @@ function Dashboard() {
                 </div>
                 <div className="measurement-box">
                     <KWhGraph />
+                    <EarningsGraph/>
                 </div>
             </div>
         </div>

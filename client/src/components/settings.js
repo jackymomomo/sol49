@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import NavBar from './navbar';
 import NavBar2 from './computerNav';
+import BuyingSettings from './Userstats';
 import '../scss/settings.scss';
 
 const Settings = () => {
@@ -61,12 +62,6 @@ const Settings = () => {
             {/* {screenWidth < 820 ? <NavBar/> : <NavBar2/>} */}
             <h1>Power Sharing Settings</h1>
             <form onSubmit={handleSubmit}>
-                {/* <div className="slider-container">
-                    <label>
-                        Minimum Price (per kWh): ${minPrice.toFixed(4)}
-                        <input type="range" min="0" max="1.1408" value={minPrice} onChange={handleSliderChange(setMinPrice)} step="0.0001" />
-                    </label>
-                </div> */}
                 <div className="slider-container">
                     <label>
                         Your Price (per kWh): ${maxPrice.toFixed(4)}
@@ -81,6 +76,7 @@ const Settings = () => {
                 </div>
                 <button type="submit">Save</button>
             </form>
+            <BuyingSettings />
         </div>
     );
 };

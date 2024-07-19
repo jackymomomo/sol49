@@ -14,7 +14,7 @@ function ModeSelector({ toggleMode }) {
     const [neighbours, setNeighbours] = useState([]);
     const [currentMode, setCurrentMode] = useState('');
     const [neighbourModes, setNeighbourModes] = useState({});
-    const [pollCount, setPollCount] = useState(0); // Polling counter
+    const [pollCount, setPollCount] = useState(0);
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -55,13 +55,39 @@ function ModeSelector({ toggleMode }) {
     }, [neighbours]);
 
     useEffect(() => {
-        if (pollCount >= 25) return; // Stop polling after 25 attempts
+        const controlBreakers = async () => {
+            if (currentMode === 'buy') {
+                const activeSellers = Object.entries(neighbourModes).filter(([_, mode]) => mode === 'sell');
+                if (activeSellers.length > 0) {
+                    await toggleDeviceSwitch(personalDeviceID, true);
+                } else {
+                    await toggleDeviceSwitch(personalDeviceID, false);
+                }
+            } else if (currentMode === 'sell') {
+                const activeBuyers = Object.entries(neighbourModes).filter(([_, mode]) => mode === 'buy');
+                if (activeBuyers.length > 0) {
+                    for (const [neighbourId, _] of activeBuyers) {
+                        const neighbourRef = doc(db, 'users', neighbourId);
+                        const neighbourSnapshot = await getDoc(neighbourRef);
+                        if (neighbourSnapshot.exists()) {
+                            const neighbourDeviceID = neighbourSnapshot.data().deviceID;
+                            await toggleDeviceSwitch(neighbourDeviceID, true);
+                        }
+                    }
+                } else {
+                    for (const neighbourId of neighbours) {
+                        const neighbourRef = doc(db, 'users', neighbourId);
+                        const neighbourSnapshot = await getDoc(neighbourRef);
+                        if (neighbourSnapshot.exists()) {
+                            const neighbourDeviceID = neighbourSnapshot.data().deviceID;
+                            await toggleDeviceSwitch(neighbourDeviceID, false);
+                        }
+                    }
+                }
+            }
+        };
 
-        const activeSellers = Object.values(neighbourModes).filter(mode => mode === 'sell').length;
-        const shouldTurnOn = currentMode !== 'off' && activeSellers > 0 && !Object.values(neighbourModes).some(mode => mode === 'buy' && activeSellers > 1);
-
-        toggleDeviceSwitch(personalDeviceID, shouldTurnOn);
-        setPollCount(prevCount => prevCount + 1); // Increment poll count
+        controlBreakers();
     }, [neighbourModes, currentMode]);
 
     useEffect(() => {
@@ -111,7 +137,7 @@ function ModeSelector({ toggleMode }) {
             setSellerSettings(sellersData);
         };
 
-        const intervalId = setInterval(controlDevices, 1500);
+        const intervalId = setInterval(controlDevices, 2000);
         return () => clearInterval(intervalId);
     }, [personalDeviceID, personalSwitchState, neighbours]);
 
@@ -140,21 +166,13 @@ function ModeSelector({ toggleMode }) {
         }
     }, [deviceStatus, neighbours, personalDeviceID, toggleMode]);
 
-    const toggleDeviceSwitch = async (deviceId, newState, performSecurityCheck = false) => {
+    const toggleDeviceSwitch = async (deviceId, newState) => {
         console.log(`Sending command to ${newState ? 'turn on' : 'turn off'} device ID:`, deviceId);
         try {
             const response = await axios.post(`https://us-central1-watt-street.cloudfunctions.net/api/device-action/${deviceId}`, {
                 newState: newState,
             });
             console.log("Toggle response:", response.data);
-
-            if (performSecurityCheck) {
-                console.log("Performing security checks and toggling seller's device.");
-                const seller = sellerSettings.find(seller => seller.deviceID !== deviceId);
-                if (seller) {
-                    await toggleDeviceSwitch(seller.deviceID, false); 
-                }
-            }
         } catch (error) {
             console.error('Error toggling switch:', error);
         }

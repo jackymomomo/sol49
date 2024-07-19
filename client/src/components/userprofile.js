@@ -5,6 +5,8 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useNavigate } from 'react-router-dom';
 import { getTimeZones } from '@vvo/tzdb';
 import '../scss/editprofile.scss';
+import { signOut } from 'firebase/auth';  // Import signOut function
+import { auth } from '../firebase-config';  // Import auth
 import NavBar from './navbar';
 import NavBar2 from './computerNav';
 import ProfileNavBar from './profilenavbar';
@@ -107,6 +109,15 @@ const UserProfile = ({ userId }) => {
         navigate('/dashboard');
     };
 
+    const handleSignOut = async () => {
+        try {
+            await signOut(auth);
+            navigate('/login');
+        } catch (error) {
+            console.log('Error signing out: ', error);
+        }
+    };
+
     return (
         <div>
              {screenWidth < 820 ? <ProfileNavBar userId={userId} /> : <NavBar2 />}
@@ -129,15 +140,15 @@ const UserProfile = ({ userId }) => {
                         <label htmlFor="address" className="label-name"><span className="content-name">Address</span></label>
                     </div>
                     <div className="form-field">
-                        <input type of="text" id="phoneNumber" required value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
+                        <input type="text" id="phoneNumber" required value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} />
                         <label htmlFor="phoneNumber" className="label-name"><span className="content-name">Phone Number</span></label>
                     </div>
                     <div className="form-field">
-                        <input type of="text" id="deviceID" required value={deviceID} onChange={(e) => setDeviceID(e.target.value)} />
+                        <input type="text" id="deviceID" required value={deviceID} onChange={(e) => setDeviceID(e.target.value)} />
                         <label htmlFor="deviceID" className="label-name"><span className="content-name">Device ID</span></label>
                     </div>
                     <div className="form-field">
-                        <label htmlFor="profileImage" className="label-name"><span className="content-name"></span></label>
+                        <label htmlFor="profileImage" className="label-name"><span className="content-name">Profile Image</span></label>
                         <input type="file" id="profileImage" onChange={handleFileChange} />
                     </div>
                     <div className="form-field">
@@ -149,23 +160,24 @@ const UserProfile = ({ userId }) => {
                         <label htmlFor="timeZone" className="label-name"><span className="content-name"></span></label>
                     </div>
                     <div className="form-field">
-    <select id="neighbours" multiple size="5" required value={selectedNeighbours} onChange={handleNeighbourSelection} className="multi-select">
-        {users.filter(user => user.uid !== userId).map((user) => (  // Filter out the current user by ID
-            <option key={user.uid} value={user.uid}>{user.name}</option>
-        ))}
-    </select>
-    <label htmlFor="neighbours" className="label-name"><span className="content-name"></span></label>
-</div>
+                        <select id="neighbours" multiple size="5" required value={selectedNeighbours} onChange={handleNeighbourSelection} className="multi-select">
+                            {users.filter(user => user.uid !== userId).map((user) => (
+                                <option key={user.uid} value={user.uid}>{user.name}</option>
+                            ))}
+                        </select>
+                        <label htmlFor="neighbours" className="label-name"><span className="content-name"></span></label>
+                    </div>
                     <div className="form-field">
                         <label htmlFor="canSellPower" className="label-name"><span className="content-name">Can Sell Power</span></label>
                         <input type="checkbox" id="canSellPower" checked={canSellPower} onChange={(e) => setCanSellPower(e.target.checked)} />
                     </div>
                     <div className="form-field">
-                        <label htmlFor="isPowerSeller" className="label-name"><span className="content-name">Can Buy power</span></label>
+                        <label htmlFor="isPowerSeller" className="label-name"><span className="content-name">Can Buy Power</span></label>
                         <input type="checkbox" id="isPowerSeller" checked={isPowerSeller} onChange={(e) => setIsPowerSeller(e.target.checked)} />
                     </div>
                     <button type="submit" className="form-submit-button">Update Profile</button>
                 </form>
+                <button onClick={handleSignOut} className="signout-button">Sign Out</button>
             </div>
             <Settings/>
         </div>
