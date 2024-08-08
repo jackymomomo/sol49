@@ -4,7 +4,6 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import axios from 'axios';
 import { useDevice } from '../context/deviceContext';
 import '../scss/buy&sel.scss';
-
 function ModeSelector({ toggleMode }) {
     const { deviceStatus, setDeviceStatus } = useDevice();
     const [personalSwitchState, setPersonalSwitchState] = useState(false);
@@ -14,7 +13,7 @@ function ModeSelector({ toggleMode }) {
     const [neighbours, setNeighbours] = useState([]);
     const [currentMode, setCurrentMode] = useState('');
     const [neighbourModes, setNeighbourModes] = useState({});
-    const [pollCount, setPollCount] = useState(0);
+    const [pollCount, setPollCount] = useState(0); // Polling counter
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -35,10 +34,8 @@ function ModeSelector({ toggleMode }) {
         });
         return () => unsubscribe();
     }, []);
-
     useEffect(() => {
         if (!neighbours.length) return;
-
         const fetchNeighboursData = async () => {
             let neighbourData = {};
             for (const neighbourId of neighbours) {
@@ -50,44 +47,17 @@ function ModeSelector({ toggleMode }) {
             }
             setNeighbourModes(neighbourData);
         };
-
         fetchNeighboursData();
     }, [neighbours]);
 
     useEffect(() => {
-        const controlBreakers = async () => {
-            if (currentMode === 'buy') {
-                const activeSellers = Object.entries(neighbourModes).filter(([_, mode]) => mode === 'sell');
-                if (activeSellers.length > 0) {
-                    await toggleDeviceSwitch(personalDeviceID, true);
-                } else {
-                    await toggleDeviceSwitch(personalDeviceID, false);
-                }
-            } else if (currentMode === 'sell') {
-                const activeBuyers = Object.entries(neighbourModes).filter(([_, mode]) => mode === 'buy');
-                if (activeBuyers.length > 0) {
-                    for (const [neighbourId, _] of activeBuyers) {
-                        const neighbourRef = doc(db, 'users', neighbourId);
-                        const neighbourSnapshot = await getDoc(neighbourRef);
-                        if (neighbourSnapshot.exists()) {
-                            const neighbourDeviceID = neighbourSnapshot.data().deviceID;
-                            await toggleDeviceSwitch(neighbourDeviceID, true);
-                        }
-                    }
-                } else {
-                    for (const neighbourId of neighbours) {
-                        const neighbourRef = doc(db, 'users', neighbourId);
-                        const neighbourSnapshot = await getDoc(neighbourRef);
-                        if (neighbourSnapshot.exists()) {
-                            const neighbourDeviceID = neighbourSnapshot.data().deviceID;
-                            await toggleDeviceSwitch(neighbourDeviceID, false);
-                        }
-                    }
-                }
-            }
-        };
+        if (pollCount >= 25) return; // Stop polling after 25 attempts
 
-        controlBreakers();
+        const activeSellers = Object.values(neighbourModes).filter(mode => mode === 'sell').length;
+        const shouldTurnOn = currentMode !== 'off' && activeSellers > 0 && !Object.values(neighbourModes).some(mode => mode === 'buy' && activeSellers > 1);
+
+        toggleDeviceSwitch(personalDeviceID, shouldTurnOn);
+        setPollCount(prevCount => prevCount + 1); // Increment poll count
     }, [neighbourModes, currentMode]);
 
     useEffect(() => {
@@ -106,12 +76,10 @@ function ModeSelector({ toggleMode }) {
         const controlDevices = async () => {
             const user = auth.currentUser;
             if (!user) return;
-
             const devicesRef = collection(db, 'users');
             const q = query(devicesRef, where("mode", "==", "sell"));
             const querySnapshot = await getDocs(q);
             let sellersData = [];
-
             for (const docSnapshot of querySnapshot.docs) {
                 if (neighbours.includes(docSnapshot.id) && docSnapshot.id !== user.uid) {
                     const seller = {
@@ -132,12 +100,11 @@ function ModeSelector({ toggleMode }) {
                     sellersData.push(seller);
                 }
             }
-
             fetchPersonalDeviceAndNeighbors();
             setSellerSettings(sellersData);
         };
 
-        const intervalId = setInterval(controlDevices, 2000);
+        const intervalId = setInterval(controlDevices, 1500);
         return () => clearInterval(intervalId);
     }, [personalDeviceID, personalSwitchState, neighbours]);
 
@@ -149,13 +116,11 @@ function ModeSelector({ toggleMode }) {
             usage: doc.data().total_forward_energy
         }));
     };
-
     useEffect(() => {
         if (deviceStatus === 'off') {
             toggleMode('off'); // Turn off the mode globally
             setCurrentMode('off'); // Update local state
             toggleDeviceSwitch(personalDeviceID, false); // Turn off personal device
-
             neighbours.forEach(async neighbourId => {
                 const neighbourRef = doc(db, 'users', neighbourId);
                 const neighbourSnapshot = await getDoc(neighbourRef);
@@ -165,30 +130,33 @@ function ModeSelector({ toggleMode }) {
             });
         }
     }, [deviceStatus, neighbours, personalDeviceID, toggleMode]);
-
-    const toggleDeviceSwitch = async (deviceId, newState) => {
+    const toggleDeviceSwitch = async (deviceId, newState, performSecurityCheck = false) => {
         console.log(`Sending command to ${newState ? 'turn on' : 'turn off'} device ID:`, deviceId);
         try {
             const response = await axios.post(`https://us-central1-watt-street.cloudfunctions.net/api/device-action/${deviceId}`, {
                 newState: newState,
             });
             console.log("Toggle response:", response.data);
+            if (performSecurityCheck) {
+                console.log("Performing security checks and toggling seller's device.");
+                const seller = sellerSettings.find(seller => seller.deviceID !== deviceId);
+                if (seller) {
+                    await toggleDeviceSwitch(seller.deviceID, false); 
+                }
+            }
         } catch (error) {
             console.error('Error toggling switch:', error);
         }
     };
-
     const handleToggleMode = async (mode) => {
         toggleMode(mode); // This function should update the mode in your global state/context
         setCurrentMode(mode); // Update the current mode
-
         if (mode === 'sell' && personalDeviceID) {
             console.log("Switching to sell mode, turning off personal device.");
             await toggleDeviceSwitch(personalDeviceID, false);
             setPersonalSwitchState(false); // Ensure local state is updated to reflect the switch state
         }
     };
-
     return (
         <div className="mode-selector">
             <div className="mode-switches">
@@ -198,7 +166,6 @@ function ModeSelector({ toggleMode }) {
                 >
                     Buy
                 </button>
-
                 {canSell && (
                     <button
                         className={`switch-button sell ${currentMode === 'sell' ? 'active' : ''}`}
@@ -217,7 +184,7 @@ function ModeSelector({ toggleMode }) {
                     Off
                 </button>
             </div>
-            <div className="sellers-list">
+            {/* <div className="sellers-list">
                 {sellerSettings.length > 0 ? sellerSettings.map((seller, index) => (
                     <div className="seller-info" key={index}>
                         <h3>{seller.name} ({seller.email})</h3>
@@ -228,9 +195,8 @@ function ModeSelector({ toggleMode }) {
                         </ul>
                     </div>
                 )) : <p className="no-sellers">No sellers available.</p>}
-            </div>
+            </div> */}
         </div>
     );
 }
-
 export default ModeSelector;

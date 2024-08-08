@@ -65,7 +65,7 @@ const Settings = () => {
                 <div className="slider-container">
                     <label>
                         Your Price (per kWh): ${maxPrice.toFixed(4)}
-                        <input type="range" min="0.0975" max="10.1408" value={maxPrice} onChange={handleSliderChange(setMaxPrice)} step="0.0001" />
+                        <input type="range" min="0.0975" max="10.14" value={maxPrice} onChange={handleSliderChange(setMaxPrice)} step="0.0001" />
                     </label>
                 </div>
                 <div className="slider-container">

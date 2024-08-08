@@ -24,7 +24,7 @@ const UserProfile = ({ userId }) => {
     const [profileImageUrl, setProfileImageUrl] = useState('');
     const [users, setUsers] = useState([]);
     const [selectedNeighbours, setSelectedNeighbours] = useState([]);
-    const [canSellPower, setCanSellPower] = useState(false);
+    const [canSellPower, setCanSellPower] = useState(false); // Track if the user can sell power
     const [isPowerSeller, setIsPowerSeller] = useState(false);
     const timeZones = getTimeZones();
 
@@ -50,7 +50,7 @@ const UserProfile = ({ userId }) => {
                 setTimeZone(userData.timeZone || timeZones[0].name);
                 setProfileImageUrl(userData.profileImageUrl || '');
                 setSelectedNeighbours(userData.neighbours || []);
-                setCanSellPower(userData.canSellPower || false);
+                setCanSellPower(userData.canSellPower || false); // Set canSellPower state
                 setIsPowerSeller(userData.isPowerSeller || false);
             } else {
                 console.log('No such document!');
@@ -120,7 +120,7 @@ const UserProfile = ({ userId }) => {
 
     return (
         <div>
-             {screenWidth < 820 ? <ProfileNavBar userId={userId} /> : <NavBar2 />}
+            {screenWidth < 820 ? <ProfileNavBar userId={userId} /> : <NavBar2 />}
             <div className="user-profile-container">
                 <h2>Edit Profile</h2>
                 {profileImageUrl && (
@@ -179,7 +179,7 @@ const UserProfile = ({ userId }) => {
                 </form>
                 <button onClick={handleSignOut} className="signout-button">Sign Out</button>
             </div>
-            <Settings/>
+            {canSellPower && <Settings />} {/* Conditionally render Settings */}
         </div>
     );
 };

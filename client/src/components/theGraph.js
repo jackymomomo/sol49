@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { db } from '../firebase-config';
-import { collection, query, getDocs, doc, getDoc, addDoc } from 'firebase/firestore';
+import { collection, query, getDocs, doc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import '../scss/kwhGraph.scss';
 
@@ -93,13 +93,6 @@ const KWhGraph = () => {
 
               costData.push(totalCost);
               console.log("Date:", docSnapshot.id, "Energy (kWh):", energyValueKWh, "Total Cost ($):", totalCost);
-
-              // Store the owed amount periodically
-              const dailyOwedRef = collection(db, `user_owed/${user.uid}/daily_owed`);
-              await addDoc(dailyOwedRef, {
-                date: docSnapshot.id,
-                totalOwed: totalCost,
-              });
             }
           }
 

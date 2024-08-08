@@ -8,8 +8,6 @@ import '../scss/kwhGraph.scss';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const formatDate = (date) => date.toISOString().split('T')[0];
-
 const COLORS = [
   { energy: 'rgba(75, 192, 192, 0.5)', earnings: 'rgba(75, 192, 192, 1)' },
   { energy: 'rgba(255, 99, 132, 0.5)', earnings: 'rgba(255, 99, 132, 1)' },
@@ -35,82 +33,87 @@ const EarningsGraph = () => {
           const userSnapshot = await getDoc(userRef);
           const userData = userSnapshot.data();
 
-          // Only display graph if the user can sell power
           if (!userData.canSellPower) {
+            console.log("User cannot sell power.");
             return;
           }
 
+          const userSettingsRef = doc(db, 'userSettings', user.uid);
+          const userSettingsSnapshot = await getDoc(userSettingsRef);
+          const userSettingsData = userSettingsSnapshot.data();
+
+          if (!userSettingsData || !userSettingsData.maxPrice) {
+            console.error(`No maxPrice found for user: ${user.uid}`);
+            return;
+          }
+
+          const maxPrice = userSettingsData.maxPrice;
           const neighbours = userData.neighbours || [];
-
-          console.log("Current user ID:", user.uid);
-          console.log("Neighbours:", neighbours);
-
           const earningsData = {};
-          const energyData = {};
           const neighbourNames = {};
 
-          for (const [index, neighbourId] of neighbours.entries()) {
+          console.log("User Neighbours:", neighbours);
+
+          for (const neighbourId of neighbours) {
             const neighbourRef = doc(db, 'users', neighbourId);
             const neighbourSnapshot = await getDoc(neighbourRef);
-            const neighbourName = neighbourSnapshot.data().name || neighbourId; // Fetch neighbour name
+            const neighbourData = neighbourSnapshot.data();
+
+            if (!neighbourData) {
+              console.log(`No data found for neighbour: ${neighbourId}`);
+              continue;
+            }
+
+            if (neighbourData.canSellPower) {
+              console.log(`Neighbour ${neighbourId} can sell power.`);
+            }
+
+            const neighbourName = neighbourData.name || neighbourId;
             neighbourNames[neighbourId] = neighbourName;
 
-            const owedQuery = query(collection(db, `user_owed/${neighbourId}/daily_owed`));
-            const owedSnapshot = await getDocs(owedQuery);
+            const userEnergyQuery = query(collection(db, `user_energy/${neighbourId}/daily_usage`));
+            const userEnergySnapshot = await getDocs(userEnergyQuery);
 
-            for (const docSnapshot of owedSnapshot.docs) {
-              const { totalOwed } = docSnapshot.data();
+            for (const docSnapshot of userEnergySnapshot.docs) {
+              const energyValueWh = docSnapshot.data().total_forward_energy;
+              const energyValueKWh = energyValueWh /  100; // Convert Wh to kWh
               const date = docSnapshot.id;
 
-              if (!earningsData[neighbourId]) {
-                earningsData[neighbourId] = {};
-                energyData[neighbourId] = {};
+              if (!earningsData[date]) {
+                earningsData[date] = {};
               }
 
-              if (!earningsData[neighbourId][date]) {
-                earningsData[neighbourId][date] = 0;
-                energyData[neighbourId][date] = 0;
+              if (!earningsData[date][neighbourId]) {
+                earningsData[date][neighbourId] = 0;
               }
 
-              earningsData[neighbourId][date] += totalOwed;
-
-              // Fetch energy data for the corresponding date
-              const energyRef = doc(db, `user_energy/${neighbourId}/daily_usage`, date);
-              const energySnapshot = await getDoc(energyRef);
-              if (energySnapshot.exists()) {
-                const energyValueWh = energySnapshot.data().total_forward_energy;
-                const energyValueKWh = energyValueWh / 1000; // Convert Wh to kWh
-                energyData[neighbourId][date] += energyValueKWh;
+              // Check if energyValueKWh is a valid number
+              if (isNaN(energyValueKWh)) {
+                console.error(`Invalid data for date ${date}: energyValueKWh=${energyValueKWh}`);
+                continue;
               }
+
+              earningsData[date][neighbourId] += energyValueKWh * maxPrice;
+
+              console.log(`Date: ${date}, Neighbour: ${neighbourName}, Energy (kWh): ${energyValueKWh}, Price per kWh: ${maxPrice}, Earnings: ${energyValueKWh * maxPrice}`);
             }
           }
 
-          const labels = Array.from(new Set(Object.values(earningsData).flatMap(Object.keys)));
-          const datasets = [];
-
-          for (const [index, neighbourId] of Object.keys(earningsData).entries()) {
-            const neighborName = neighbourNames[neighbourId];
-            const neighborEarnings = labels.map(label => earningsData[neighbourId][label] || 0);
-            const neighborEnergy = labels.map(label => energyData[neighbourId][label] || 0);
-            const colorSet = COLORS[index % COLORS.length];
-
-            datasets.push({
-              label: `${neighborName} - Earnings ($)`,
-              data: neighborEarnings,
-              backgroundColor: colorSet.earnings,
+          const labels = Object.keys(earningsData).sort();
+          const datasets = neighbours.map((neighbourId, index) => {
+            const colorIndex = index % COLORS.length;
+            return {
+              label: neighbourNames[neighbourId],
+              data: labels.map(date => earningsData[date][neighbourId] || 0),
+              backgroundColor: COLORS[colorIndex].earnings,
               yAxisID: 'y1',
-            });
+            };
+          });
 
-            datasets.push({
-              label: `${neighborName} - Energy Sold (kWh)`,
-              data: neighborEnergy,
-              backgroundColor: colorSet.energy,
-              yAxisID: 'y',
-            });
-          }
+          console.log("Labels:", labels);
+          console.log("Datasets:", datasets);
 
           setChartData({ labels, datasets });
-
         } catch (error) {
           console.error("Error fetching earnings data:", error);
         }
@@ -148,6 +151,9 @@ const EarningsGraph = () => {
                 legend: { display: true },
                 tooltip: { enabled: true, mode: 'index', intersect: false },
               },
+              barPercentage: 0.85, // Adjust this value to control bar width
+              categoryPercentage: 0.85, // Adjust this value to control category spacing
+              grouped: true, // Ensure bars for each dataset (neighbor) are grouped together by date
             }}
           />
         </>
