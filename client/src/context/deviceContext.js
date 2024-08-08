@@ -56,13 +56,18 @@ export const DeviceProvider = ({ children }) => {
             console.error("No device ID available.");
             return;
         }
-
+    
         setIsLoading(true);
         try {
             const response = await axios.get(`https://us-central1-watt-street.cloudfunctions.net/api/device-status/${deviceID}`);
             const results = response.data.result;
             let newStatus = { ...deviceStatus };
-
+    
+            // Fetch the TFE reset offset from Firestore
+            const userRef = doc(db, 'users', auth.currentUser?.uid);
+            const userDoc = await getDoc(userRef);
+            const tfeResetOffset = userDoc.exists() ? parseFloat(userDoc.data().tfeResetOffset || '0') : 0;
+    
             const phaseAObj = results.find(d => d.code === 'phase_a');
             if (phaseAObj && phaseAObj.value) {
                 const phaseAData = decodePhaseAData(phaseAObj.value);
@@ -70,18 +75,20 @@ export const DeviceProvider = ({ children }) => {
                 newStatus.kW = `${phaseAData.power * 1000} kW`;
                 newStatus.volts = `${phaseAData.voltage} V`;
             }
-
+    
             const energyObj = results.find(d => d.code === 'total_forward_energy');
             if (energyObj && energyObj.value) {
-                newStatus.totalForwardEnergy = (parseFloat(energyObj.value) / 100).toFixed(2) + ' kWh';
-                newStatus.batteryPercentage = ((parseFloat(newStatus.totalForwardEnergy) / 14.3) * 100).toFixed(2) + '%';
+                const rawTFE = parseFloat(energyObj.value) / 100;
+                const adjustedTFE = (rawTFE - tfeResetOffset).toFixed(2);
+                newStatus.totalForwardEnergy = `${adjustedTFE} kWh`;
+                newStatus.batteryPercentage = ((adjustedTFE / 14.3) * 100).toFixed(2) + '%';
             }
-
+    
             const switchObj = results.find(d => d.code === 'switch');
             if (switchObj) {
                 newStatus.switch = switchObj.value;
             }
-
+    
             setDeviceStatus(newStatus);
         } catch (error) {
             console.error('Failed to fetch device status:', error);
@@ -89,7 +96,7 @@ export const DeviceProvider = ({ children }) => {
             setIsLoading(false);
         }
     }, [deviceID, deviceStatus]);
-
+    
     const toggleDeviceSwitch = async (deviceID, newState) => {
         setIsLoading(true);
         try {
