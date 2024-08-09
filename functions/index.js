@@ -82,7 +82,7 @@ app.get("/report-logs/:deviceId", async (req, res) => {
   }
 });
 
-// Export the app to Firebase Functions
+// Export the app to firebase Functions
 exports.api = functions.https.onRequest(app);
 
 exports.storeEnergyDataPeriodically = functions.pubsub.schedule("every minute").onRun(async (context) => {
@@ -175,56 +175,91 @@ exports.proxyBatteryStatus = functions.https.onRequest((request, response) => {
 });
 
 
-exports.storeOwedAmountPeriodically = functions.pubsub.schedule("every 5 minutes").onRun(async (context) => {
+exports.storePriceDataPeriodically = functions.pubsub.schedule("every 5 minutes").onRun(async (context) => {
   const usersSnapshot = await firestore.collection("users").get();
-  const currentDate = new Date().toISOString().split("T")[0];
 
   for (const userDoc of usersSnapshot.docs) {
-    const userData = userDoc.data();
-    const neighbours = userData.neighbours || [];
-    const userId = userDoc.id;
+    const user = userDoc.data();
+    const deviceId = user.deviceID;
+    if (!deviceId) {
+      console.log(`No device ID for user: ${userDoc.id}`);
+      continue;
+    }
 
-    let totalOwed = 0;
-    let energyValueKWh = 0;
+    const userSettingsRef = firestore.collection("userSettings").doc(userDoc.id);
+    const userSettingsDoc = await userSettingsRef.get();
+    if (!userSettingsDoc.exists) {
+      console.log(`No settings found for user: ${userDoc.id}`);
+      continue;
+    }
 
-    for (const neighbourId of neighbours) {
-      const energyQuery = firestore.collection(`user_energy/${neighbourId}/daily_usage`).where("date", "==", currentDate);
-      const energySnapshot = await energyQuery.get();
+    const {maxPrice} = userSettingsDoc.data();
+    if (!maxPrice) {
+      console.log(`No price set for user: ${userDoc.id}`);
+      continue;
+    }
 
-      for (const docSnapshot of energySnapshot.docs) {
-        const energyValueWh = docSnapshot.data().total_forward_energy;
-        energyValueKWh += energyValueWh / 1000; // Convert Wh to kWh
+    let lastRowKey = null;
+    let hasMore = true;
+    const energyData = [];
 
-        const neighbourRef = firestore.collection("users").doc(neighbourId);
-        const neighbourSnapshot = await neighbourRef.get();
-        const neighbourData = neighbourSnapshot.data();
+    while (hasMore) {
+      try {
+        const logsResponse = await tuya.request({
+          method: "GET",
+          path: `/v2.0/cloud/thing/${deviceId}/report-logs`,
+          query: {
+            codes: "total_forward_energy",
+            start_time: "0",
+            end_time: Date.now().toString(),
+            size: "100",
+            last_row_key: lastRowKey,
+          },
+        });
 
-        if (neighbourData.canSellPower && neighbourData.neighbours.includes(userId)) {
-          const settingsRef = firestore.collection("userSettings").doc(neighbourId);
-          const settingsSnapshot = await settingsRef.get();
-          if (settingsSnapshot.exists) {
-            const {maxPrice} = settingsSnapshot.data();
-            const owed = energyValueKWh * maxPrice;
-            totalOwed += owed;
-          }
+        if (logsResponse.success && logsResponse.result && logsResponse.result.logs.length) {
+          energyData.push(...logsResponse.result.logs);
+          lastRowKey = logsResponse.result.last_row_key;
+          hasMore = !!lastRowKey;
+        } else {
+          hasMore = false;
         }
+      } catch (error) {
+        console.error(`Error fetching energy logs for device ${deviceId} of user ${userDoc.id}:`, error);
+        break;
       }
     }
 
-    if (totalOwed > 0) {
-      const dailyOwedRef = firestore.collection(`user_owed/${userId}/daily_owed`).doc(currentDate);
-      const dailyOwedDoc = await dailyOwedRef.get();
+    if (energyData.length) {
+      const dailyTotals = energyData.reduce((acc, log) => {
+        const day = new Date(parseInt(log.event_time)).toISOString().split("T")[0];
+        const value = parseInt(log.value, 10);
 
-      if (dailyOwedDoc.exists) {
-        // Update the existing document
-        const previousTotalOwed = dailyOwedDoc.data().totalOwed || 0;
-        await dailyOwedRef.update({totalOwed: previousTotalOwed + totalOwed});
-      } else {
-        // Create a new document for the current date
-        await dailyOwedRef.set({date: currentDate, totalOwed});
+        if (!acc[day]) {
+          acc[day] = {startValue: value, lastValue: value};
+        } else {
+          if (value < acc[day].startValue) acc[day].startValue = value;
+          if (value > acc[day].lastValue) acc[day].lastValue = value;
+        }
+
+        return acc;
+      }, {});
+
+      for (const [day, {startValue, lastValue}] of Object.entries(dailyTotals)) {
+        const dailyTotalKWh = (lastValue - startValue) / 100; // Convert Wh to kWh
+        const dailyCost = dailyTotalKWh * maxPrice;
+        const userEnergyDocRef = firestore.collection("user_energy").doc(userDoc.id).collection("daily_usage").doc(day);
+
+        await userEnergyDocRef.set({
+          total_forward_energy: dailyTotalKWh,
+          price_per_kWh: maxPrice,
+          daily_cost: dailyCost,
+        }, {merge: true});
       }
-
-      console.log(`Total owed for ${currentDate}: $${totalOwed}`);
+    } else {
+      console.log(`No energy data found for device ${deviceId} of user ${userDoc.id}`);
     }
   }
+
+  console.log("Price data processing task completed.");
 });
