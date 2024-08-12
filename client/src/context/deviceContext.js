@@ -72,13 +72,13 @@ export const DeviceProvider = ({ children }) => {
             if (phaseAObj && phaseAObj.value) {
                 const phaseAData = decodePhaseAData(phaseAObj.value);
                 newStatus.amps = `${phaseAData.current} A`;
-                newStatus.kW = `${phaseAData.power * 1000} kW`;
+                newStatus.kW = `${phaseAData.power} kW`;  // Adjusted to show power in kW
                 newStatus.volts = `${phaseAData.voltage} V`;
             }
     
             const energyObj = results.find(d => d.code === 'total_forward_energy');
             if (energyObj && energyObj.value) {
-                const rawTFE = parseFloat(energyObj.value) / 100;
+                const rawTFE = parseFloat(energyObj.value) / 100; // Assuming it's in Wh
                 const adjustedTFE = (rawTFE - tfeResetOffset).toFixed(2);
                 newStatus.totalForwardEnergy = `${adjustedTFE} kWh`;
                 newStatus.batteryPercentage = ((adjustedTFE / 14.3) * 100).toFixed(2) + '%';

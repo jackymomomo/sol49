@@ -5,7 +5,6 @@ import { auth, db } from '../firebase-config';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import '../scss/energyStatistics.scss';
 import ProfileNavBar from './profilenavbar';
-import NavBar2 from './computerNav';
 import SpeedometerGauge from './speedometer';
 import ModeSelector from './buy@sell';
 import { useDevice } from '../context/deviceContext';
