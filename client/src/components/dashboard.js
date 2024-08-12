@@ -17,7 +17,7 @@ function Dashboard() {
     const navigate = useNavigate();
     const [homeAssistantBattery, setHomeAssistantBattery] = useState('');
     const [userId, setUserId] = useState('');
-    const [mode, setMode] = useState('off'); // State to store the mode
+    const [mode, setMode] = useState(''); // State to store the mode
     const [resetTFE, setResetTFE] = useState(false); // Flag to track if TFE has been reset
 
     // Handle screen resizing

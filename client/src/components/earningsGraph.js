@@ -51,6 +51,7 @@ const EarningsGraph = () => {
           const neighbours = userData.neighbours || [];
           const earningsData = {};
           const neighbourNames = {};
+          const neighbourTotals = {};
 
           console.log("User Neighbours:", neighbours);
 
@@ -70,13 +71,14 @@ const EarningsGraph = () => {
 
             const neighbourName = neighbourData.name || neighbourId;
             neighbourNames[neighbourId] = neighbourName;
+            neighbourTotals[neighbourId] = 0; // Initialize total for each neighbor
 
             const userEnergyQuery = query(collection(db, `user_energy/${neighbourId}/daily_usage`));
             const userEnergySnapshot = await getDocs(userEnergyQuery);
 
             for (const docSnapshot of userEnergySnapshot.docs) {
               const energyValueWh = docSnapshot.data().total_forward_energy;
-              const energyValueKWh = energyValueWh /  100; // Convert Wh to kWh
+              const energyValueKWh = energyValueWh / 100; // Convert Wh to kWh
               const date = docSnapshot.id;
 
               if (!earningsData[date]) {
@@ -93,18 +95,30 @@ const EarningsGraph = () => {
                 continue;
               }
 
-              earningsData[date][neighbourId] += energyValueKWh * maxPrice;
+              const earnings = energyValueKWh * maxPrice;
+              earningsData[date][neighbourId] += earnings;
 
-              console.log(`Date: ${date}, Neighbour: ${neighbourName}, Energy (kWh): ${energyValueKWh}, Price per kWh: ${maxPrice}, Earnings: ${energyValueKWh * maxPrice}`);
+              neighbourTotals[neighbourId] += earnings; // Sum the earnings for the total
+
+              console.log(`Date: ${date}, Neighbour: ${neighbourName}, Energy (kWh): ${energyValueKWh}, Price per kWh: ${maxPrice}, Earnings: ${earnings}`);
             }
           }
 
-          const labels = Object.keys(earningsData).sort();
+          // Filter out dates with zero earnings for all neighbors
+          const filteredEarningsData = Object.keys(earningsData).reduce((acc, date) => {
+            const totalEarnings = neighbours.reduce((sum, neighbourId) => sum + (earningsData[date][neighbourId] || 0), 0);
+            if (totalEarnings > 0) {
+              acc[date] = earningsData[date];
+            }
+            return acc;
+          }, {});
+
+          const labels = Object.keys(filteredEarningsData).sort();
           const datasets = neighbours.map((neighbourId, index) => {
             const colorIndex = index % COLORS.length;
             return {
-              label: neighbourNames[neighbourId],
-              data: labels.map(date => earningsData[date][neighbourId] || 0),
+              label: `${neighbourNames[neighbourId]} (Total: $${neighbourTotals[neighbourId].toFixed(2)})`,
+              data: labels.map(date => filteredEarningsData[date][neighbourId] || 0),
               backgroundColor: COLORS[colorIndex].earnings,
               yAxisID: 'y1',
             };
