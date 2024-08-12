@@ -120,7 +120,7 @@ const UserProfile = ({ userId }) => {
 
     return (
         <div>
-            {screenWidth < 820 ? <ProfileNavBar userId={userId} /> : <NavBar2 />}
+             <ProfileNavBar userId={userId}/>
             <div className="user-profile-container">
                 <h2>Edit Profile</h2>
                 {profileImageUrl && (
