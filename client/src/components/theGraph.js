@@ -29,6 +29,8 @@ const KWhGraph = () => {
     ],
   });
 
+  const [totals, setTotals] = useState({ totalKWh: 0, totalPrice: 0 });
+
   useEffect(() => {
     const fetchEnergyData = async () => {
       const auth = getAuth();
@@ -39,9 +41,6 @@ const KWhGraph = () => {
           const userSnapshot = await getDoc(userRef);
           const userData = userSnapshot.data();
           const neighbours = userData.neighbours || [];
-
-          console.log("Current user ID:", user.uid);
-          console.log("Neighbours:", neighbours);
 
           const sellersData = [];
 
@@ -60,22 +59,18 @@ const KWhGraph = () => {
                 const { maxPrice } = settingsSnapshot.data();
                 seller.maxPrice = maxPrice;
                 sellersData.push(seller);
-                console.log("Found seller:", seller.uid, "Price per kWh:", maxPrice);
-              } else {
-                console.log("Settings not found for seller:", seller.uid);
               }
-            } else {
-              console.log("Neighbour cannot sell or does not have the current user as a neighbour:", neighbourId);
             }
           }
-
-          console.log("Sellers data:", sellersData);
 
           const energyQuery = query(collection(db, `user_energy/${user.uid}/daily_usage`));
           const querySnapshot = await getDocs(energyQuery);
           const labels = [];
           const kWhData = [];
           const costData = [];
+
+          let totalKWh = 0;
+          let totalPrice = 0;
 
           for (const docSnapshot of querySnapshot.docs) {
             const energyValueWh = docSnapshot.data().total_forward_energy;
@@ -84,15 +79,16 @@ const KWhGraph = () => {
               labels.push(formatDate(new Date(docSnapshot.id)));
               kWhData.push(energyValueKWh);
 
+              totalKWh += energyValueKWh;
+
               let totalCost = 0;
               for (const seller of sellersData) {
-                const cost = energyValueKWh * seller.maxPrice; // Move the decimal place up by one
+                const cost = energyValueKWh * seller.maxPrice; // Calculate cost
                 totalCost += cost;
-                console.log(`Seller UID: ${seller.uid}, Energy (kWh): ${energyValueKWh}, Price per kWh: ${seller.maxPrice}, Cost: ${cost}`);
               }
 
               costData.push(totalCost);
-              console.log("Date:", docSnapshot.id, "Energy (kWh):", energyValueKWh, "Total Cost ($):", totalCost);
+              totalPrice += totalCost;
             }
           }
 
@@ -103,6 +99,8 @@ const KWhGraph = () => {
               { ...chartData.datasets[1], data: costData },
             ],
           });
+
+          setTotals({ totalKWh, totalPrice });
         } catch (error) {
           console.error("Error fetching data:", error);
         }
@@ -117,6 +115,8 @@ const KWhGraph = () => {
       {chartData.labels.length > 0 ? (
         <>
           <h1>Historical Purchases</h1>
+          <p>Total kWh Used: {totals.totalKWh.toFixed(2)} kWh</p>
+          <p>Total Cost: ${totals.totalPrice.toFixed(2)}</p>
           <Bar
             data={chartData}
             options={{
