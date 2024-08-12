@@ -263,3 +263,52 @@ exports.storePriceDataPeriodically = functions.pubsub.schedule("every 5 minutes"
 
   console.log("Price data processing task completed.");
 });
+
+
+exports.fetchPhaseAPowerData = functions.https.onRequest((request, response) => {
+  corsHandler(request, response, async () => {
+    try {
+      const userId = request.body.userId; // The user ID of the person requesting the data
+      const results = {};
+
+      // Get the requesting user's document to fetch neighbor information
+      const userDoc = await firestore.collection("users").doc(userId).get();
+      if (!userDoc.exists) {
+        return response.status(404).send(`No user document found for ID: ${userId}`);
+      }
+
+      const userData = userDoc.data();
+      const neighbors = userData.neighbours || []; // Assuming there's a 'neighbours' field in the user document
+
+      for (const neighborId of neighbors) {
+        const neighborDoc = await firestore.collection("users").doc(neighborId).get();
+        if (!neighborDoc.exists) {
+          console.log(`No neighbor document found for ID: ${neighborId}`);
+          continue;
+        }
+
+        const neighborData = neighborDoc.data();
+        const sensorName = `sensor.${neighborData.name.toLowerCase()}_phase_a_power`; // Assuming 'name' field exists and is used as part of the sensor name
+
+        try {
+          const result = await axios.get(`https://moondance.savaryliving.com/api/states/${sensorName}`, {
+            headers: {
+              "Authorization": `Bearer ${functions.config().homeassistant.token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          results[neighborData.name] = result.data.state; // Store the phase A power data under the neighbor's name
+        } catch (error) {
+          console.error(`Failed to fetch Phase A power data for neighbor ${neighborData.name}:`, error);
+          results[neighborData.name] = "Error fetching data";
+        }
+      }
+
+      response.send(results);
+    } catch (error) {
+      console.error("Failed to fetch Phase A power data:", error);
+      response.status(500).send("Server Error");
+    }
+  });
+});
